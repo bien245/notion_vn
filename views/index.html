@@ -1,0 +1,2670 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notion Quick Add</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+    :root {
+      color-scheme: light;
+      --bg: #f7f6f3;
+      --surface: #fbfaf5;
+      --surface-alt: #ffffff;
+      --border: #e4e2da;
+      --border-strong: #cfcbb8;
+      --text: #2f3437;
+      --muted: #787774;
+      --accent: #2f76ff;
+      --accent-strong: #0b57d0;
+      --success: #23a559;
+      --danger: #eb5757;
+      --radius: 14px;
+      --shadow-sm: 0 2px 12px rgba(15, 15, 15, 0.05);
+      --shadow-md: 0 16px 40px rgba(15, 15, 15, 0.07);
+      --sidebar-bg: linear-gradient(160deg, #fbfaf5 0%, #f1efe8 100%);
+      --sidebar-border: rgba(228, 226, 218, 0.75);
+      --sidebar-text: var(--text);
+      --sidebar-muted: #908f8a;
+      --header-bg: rgba(251, 250, 245, 0.9);
+      --overlay-bg: rgba(23, 23, 23, 0.45);
+      --icon-btn-bg: var(--surface-alt);
+      --icon-btn-border: var(--border);
+    }
+    body[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #121418;
+      --surface: #181b21;
+      --surface-alt: #1f232a;
+      --border: #2a2f38;
+      --border-strong: #3a404a;
+      --text: #e3e7ee;
+      --muted: #8c92a3;
+      --accent: #5aa1ff;
+      --accent-strong: #73b3ff;
+      --success: #4ad395;
+      --danger: #ff7676;
+      --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 22px 45px rgba(0, 0, 0, 0.45);
+      --sidebar-bg: linear-gradient(165deg, #181b21 0%, #20252d 100%);
+      --sidebar-border: rgba(255, 255, 255, 0.04);
+      --sidebar-text: #f5f6f9;
+      --sidebar-muted: #929bb0;
+      --header-bg: rgba(18, 20, 24, 0.8);
+      --overlay-bg: rgba(3, 8, 15, 0.65);
+      --icon-btn-bg: #1f232a;
+      --icon-btn-border: #2a2f38;
+    }
+    .boot-banner {
+      position: sticky;
+      top: 0;
+      inset-inline: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px clamp(16px, 3vw, 28px);
+      background: #fff7df;
+      color: #7a5c00;
+      border-bottom: 1px solid #f1d28a;
+      font-size: 0.95rem;
+      z-index: 30;
+      box-shadow: 0 12px 30px rgba(15, 15, 15, 0.06);
+    }
+    .boot-banner.hidden {
+      display: none;
+    }
+    .boot-banner.error {
+      background: #fdecea;
+      color: #b71c1c;
+      border-bottom-color: #f5b4b4;
+    }
+    .boot-banner .boot-spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(122, 92, 0, 0.24);
+      border-top-color: currentColor;
+      animation: spin 0.8s linear infinite;
+    }
+    .boot-banner.error .boot-spinner {
+      display: none;
+    }
+    .boot-banner button {
+      margin-left: auto;
+      display: none;
+    }
+    .boot-banner.error button {
+      display: inline-flex;
+    }
+    .boot-banner button:disabled {
+      opacity: 0.65;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'DM Sans', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.35s ease, color 0.35s ease;
+    }
+    body.sidebar-open {
+      overflow: hidden;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .topbar {
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px clamp(16px, 3vw, 32px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--text);
+      color: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+    .brand__meta h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand__subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    main {
+      padding: clamp(24px, 4vw, 56px);
+      display: flex;
+      justify-content: center;
+    }
+    .workspace {
+      width: min(1280px, 100%);
+      display: grid;
+      grid-template-columns: clamp(240px, 24vw, 320px) minmax(0, 1fr);
+      gap: clamp(20px, 2.4vw, 36px);
+      align-items: start;
+    }
+    .pane {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+    }
+    .workspace > .pane:only-child {
+      grid-column: 1 / -1;
+      max-width: none;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: clamp(22px, 2.3vw, 32px);
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.25s ease;
+      width: 100%;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(15, 15, 15, 0.08);
+    }
+    .card--compact {
+      display: none;
+      padding: 20px;
+    }
+    .card__head {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .card__head--with-actions {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    .card__head-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .card__actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card__head h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .card__head p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .star-btn {
+      border: none;
+      background: transparent;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--muted);
+      transition: transform 0.2s ease, color 0.2s ease;
+      padding: 6px;
+      border-radius: 10px;
+    }
+    .star-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+      color: var(--accent);
+      background: rgba(47, 118, 255, 0.12);
+    }
+    .star-btn.is-active {
+      color: var(--accent);
+    }
+    .star-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .card--favorites {
+      background: linear-gradient(135deg, rgba(47,118,255,0.08), rgba(47,118,255,0.02));
+      border: 1px solid rgba(47, 118, 255, 0.2);
+    }
+    .favorite-empty {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .favorite-groups {
+      margin-top: 16px;
+      display: grid;
+      gap: 18px;
+    }
+    .favorite-group h3 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .favorite-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .favorite-item {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.2s ease, border 0.2s ease;
+    }
+    .favorite-item:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 18px rgba(47, 118, 255, 0.16);
+    }
+    .card > * + * {
+      margin-top: 20px;
+    }
+    .row {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .row-3 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .row--single {
+      grid-template-columns: 1fr;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input,
+    select,
+    textarea {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.98rem;
+      background: var(--surface-alt);
+      color: var(--text);
+      transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 118, 255, 0.16);
+      background: #fff;
+    }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5.5 7L10 11.5L14.5 7' stroke='%23787774' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+      padding-right: 44px;
+    }
+    select[size],
+    select[multiple] {
+      background-image: none;
+      padding-right: 14px;
+    }
+    select[size] {
+      height: clamp(200px, 40vh, 280px);
+    }
+    select[size],
+    select[multiple],
+    textarea {
+      scrollbar-width: none;
+    }
+    select[size]::-webkit-scrollbar,
+    select[multiple]::-webkit-scrollbar,
+    textarea::-webkit-scrollbar {
+      display: none;
+    }
+    select option {
+      padding: 10px;
+      background: var(--surface-alt);
+    }
+    select option:hover {
+      background: rgba(47, 118, 255, 0.12);
+    }
+    select[size]:hover,
+    select[multiple]:hover,
+    textarea:hover {
+      scrollbar-width: thin;
+    }
+    select[size]:hover::-webkit-scrollbar,
+    select[multiple]:hover::-webkit-scrollbar,
+    textarea:hover::-webkit-scrollbar {
+      display: block;
+      width: 8px;
+    }
+    select[size]:hover::-webkit-scrollbar-thumb,
+    select[multiple]:hover::-webkit-scrollbar-thumb,
+    textarea:hover::-webkit-scrollbar-thumb {
+      background: rgba(47, 52, 55, 0.28);
+      border-radius: 999px;
+    }
+    button {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 999px;
+      border: none;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    button:not(.chip) {
+      padding: 10px 18px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    button:not(.chip):hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(47, 118, 255, 0.2);
+    }
+    button:not(.chip):active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 6px 16px rgba(47, 118, 255, 0.22);
+    }
+    button.ghost {
+      background: transparent;
+      color: var(--accent-strong);
+      border-color: rgba(47, 118, 255, 0.5);
+    }
+    button.ghost:hover:not(:disabled) {
+      background: rgba(47, 118, 255, 0.1);
+      box-shadow: none;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .toolbar__group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .toolbar__group--grow {
+      flex: 1;
+    }
+    .toolbar__group--grow input {
+      flex: 1;
+      min-width: 0;
+    }
+    .toolbar__group--grow button:not(.chip) {
+      flex-shrink: 0;
+    }
+    .toolbar--compact {
+      align-items: stretch;
+    }
+    .list {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .select-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .property-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    #propsForm {
+      display: grid;
+      gap: 16px;
+    }
+    #propsForm .col {
+      padding: 16px;
+      border-radius: 12px;
+      background: var(--surface-alt);
+      border: 1px solid rgba(228, 226, 218, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    .chip-multi {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chip-multi__list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip-multi__hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .chip-multi__add {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .chip-multi__add input {
+      flex: 1 1 160px;
+      min-width: 140px;
+    }
+    .chip-multi__add select {
+      flex: 0 0 140px;
+    }
+    .chip-multi__status {
+      flex: 1 1 100%;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    button.chip {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: rgba(15, 15, 15, 0.05);
+      color: var(--text);
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: none;
+    }
+    button.chip:hover {
+      border-color: rgba(15, 15, 15, 0.2);
+      transform: translateY(-1px);
+    }
+    button.chip.active {
+      box-shadow: 0 8px 18px rgba(15, 15, 15, 0.12);
+      transform: translateY(-1px);
+    }
+    button.chip[data-color="default"] {
+      --chip-color: #2f3437;
+      --chip-background: rgba(47, 52, 55, 0.12);
+      --chip-active-bg: #2f3437;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="red"] {
+      --chip-color: #d83d3d;
+      --chip-background: rgba(216, 61, 61, 0.14);
+      --chip-active-bg: #d83d3d;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="orange"] {
+      --chip-color: #d9730d;
+      --chip-background: rgba(217, 115, 13, 0.16);
+      --chip-active-bg: #d9730d;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="yellow"] {
+      --chip-color: #dfab01;
+      --chip-background: rgba(223, 171, 1, 0.2);
+      --chip-active-bg: #dfab01;
+      --chip-active-color: #2f3437;
+    }
+    button.chip[data-color="green"] {
+      --chip-color: #0f7b6c;
+      --chip-background: rgba(15, 123, 108, 0.16);
+      --chip-active-bg: #0f7b6c;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="blue"] {
+      --chip-color: #0b6e99;
+      --chip-background: rgba(11, 110, 153, 0.18);
+      --chip-active-bg: #0b6e99;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="purple"] {
+      --chip-color: #6940a5;
+      --chip-background: rgba(105, 64, 165, 0.18);
+      --chip-active-bg: #6940a5;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="pink"] {
+      --chip-color: #ad1a72;
+      --chip-background: rgba(173, 26, 114, 0.18);
+      --chip-active-bg: #ad1a72;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="brown"] {
+      --chip-color: #944e2a;
+      --chip-background: rgba(148, 78, 42, 0.18);
+      --chip-active-bg: #944e2a;
+      --chip-active-color: #ffffff;
+    }
+    button.chip[data-color="gray"] {
+      --chip-color: #9a9a97;
+      --chip-background: rgba(154, 154, 151, 0.22);
+      --chip-active-bg: #9a9a97;
+      --chip-active-color: #2f3437;
+    }
+    button.chip[data-color] {
+      background: var(--chip-background, rgba(15, 15, 15, 0.05));
+      color: var(--chip-color, var(--text));
+    }
+    button.chip[data-color].active {
+      background: var(--chip-active-bg, var(--accent));
+      color: var(--chip-active-color, #fff);
+      border-color: transparent;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .status {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .status:not(:empty) {
+      font-weight: 500;
+    }
+    .status.danger {
+      color: var(--danger);
+    }
+    .property-panel label {
+      font-size: 0.75rem;
+    }
+    #q {
+      width: 100%;
+    }
+    #searchList {
+      width: 100%;
+    }
+    .waiting-server {
+      position: relative;
+    }
+    .waiting-server::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.4);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .waiting-server[data-disabled="true"]::after {
+      opacity: 1;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    @media (max-width: 1024px) {
+      main {
+        padding: 32px 20px 48px;
+      }
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .topbar__inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+    @media (max-width: 768px) {
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .toolbar__group {
+        width: 100%;
+        justify-content: stretch;
+      }
+      .toolbar__group button:not(.chip),
+      .toolbar__group input {
+        width: 100%;
+      }
+      main {
+        padding: 24px 16px 32px;
+      }
+      .card {
+        padding: 20px;
+      }
+    }
+    .title-with-icon {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    .hidden-select {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .combo {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-alt);
+      cursor: text;
+      transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .combo:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 118, 255, 0.16);
+      background: #fff;
+    }
+    .combo input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.98rem;
+      padding: 0;
+      min-width: 0;
+      color: inherit;
+    }
+    .combo input::placeholder {
+      color: var(--muted);
+    }
+    .combo input:focus {
+      outline: none;
+    }
+    .combo__chevron {
+      font-size: 0.8rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .combo__menu {
+      position: absolute;
+      inset-inline: 0;
+      top: calc(100% + 6px);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      max-height: 280px;
+      overflow: auto;
+      z-index: 60;
+    }
+    .combo__menu.hidden {
+      display: none;
+    }
+    .combo__item {
+      border: none;
+      background: transparent;
+      text-align: left;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: inherit;
+      transition: background 0.15s ease, transform 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .combo__item:hover,
+    .combo__item.active {
+      background: rgba(47, 118, 255, 0.12);
+    }
+    .combo__item-label {
+      flex: 1;
+      pointer-events: none;
+    }
+    .combo__star {
+      flex: none;
+      font-size: 1.1rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: transform 0.15s ease, color 0.15s ease;
+      user-select: none;
+    }
+    .combo__star:hover {
+      transform: scale(1.1);
+      color: var(--accent);
+    }
+    .combo__star.is-active {
+      color: var(--accent);
+    }
+    .combo__empty {
+      padding: 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .icon-btn-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--icon-btn-bg);
+      color: var(--text);
+      border: 1px solid var(--icon-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .icon-btn:hover:not(:disabled) {
+      background: var(--surface-alt);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(15, 15, 15, 0.08);
+    }
+    .emoji-popover {
+      position: absolute;
+      top: 50%;
+      right: calc(100% + 12px);
+      transform: translateY(-50%);
+      z-index: 50;
+      display: flex;
+    }
+    .emoji-popover.hidden { display: none; }
+    .emoji-popover::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 10px solid var(--surface);
+      filter: drop-shadow(0 6px 12px rgba(15, 15, 15, 0.12));
+    }
+    .emoji-popover__panel {
+      width: min(340px, 70vw);
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .emoji-popover__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .emoji-popover__foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+    }
+    .emoji-popover__panel emoji-picker {
+      flex: 1;
+      border: none;
+      max-height: 55vh;
+      background: var(--surface);
+      color: inherit;
+    }
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.35s ease, color 0.35s ease;
+    }
+    .sidebar {
+      width: 280px;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 40;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+      transform: translateX(0);
+    }
+    .sidebar__brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--sidebar-text);
+    }
+    .sidebar__brand .brand__icon {
+      background: var(--sidebar-text);
+      color: var(--surface-alt);
+    }
+    .sidebar__brand h1 {
+      color: var(--sidebar-text);
+    }
+    .sidebar__brand .brand__subtitle {
+      color: var(--sidebar-muted);
+    }
+    .sidebar__meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar__meta h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .sidebar__meta p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--sidebar-muted);
+    }
+    .sidebar__section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .sidebar__status {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--sidebar-border);
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(8px);
+      color: var(--sidebar-muted);
+    }
+    body[data-theme="dark"] .sidebar__status {
+      background: rgba(24, 27, 33, 0.8);
+      color: var(--sidebar-muted);
+    }
+    .sidebar__footer {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--sidebar-muted);
+      font-size: 0.85rem;
+    }
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 30;
+    }
+    body.sidebar-open .sidebar-overlay {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      backdrop-filter: saturate(120%);
+    }
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 18px clamp(16px, 5vw, 36px);
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      backdrop-filter: blur(12px);
+    }
+    .app-header__spacer {
+      flex: 1;
+    }
+    .menu-toggle {
+      display: none;
+    }
+    .sidebar-close {
+      display: none;
+    }
+    @media (max-width: 1080px) {
+      .app-shell {
+        position: relative;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        width: min(320px, 80vw);
+        box-shadow: none;
+      }
+      body.sidebar-open .sidebar {
+        transform: translateX(0);
+        box-shadow: var(--shadow-md);
+      }
+      .menu-toggle {
+        display: inline-flex;
+      }
+      .sidebar-close {
+        display: inline-flex;
+        margin-left: auto;
+        margin-bottom: 12px;
+      }
+      .app-header {
+        justify-content: space-between;
+      }
+    }
+  </style>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.min.js"></script>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <div id="bootBanner" class="boot-banner">
+    <div class="boot-spinner" aria-hidden="true"></div>
+    <span id="bootMessage">Đang kiểm tra máy chủ...</span>
+    <button id="bootRetry" type="button" class="ghost">Thử lại</button>
+  </div>
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar">
+      <button id="sidebarClose" class="sidebar-close icon-btn" type="button" aria-label="Đóng menu">✕</button>
+      <div class="sidebar__brand">
+        <span class="brand__icon">N</span>
+        <div class="sidebar__meta">
+          <h1>Notion Quick Add</h1>
+          <p class="brand__subtitle">Kết nối workspace và thao tác tức thì</p>
+        </div>
+      </div>
+      <div class="sidebar__section">
+        <span class="sidebar__status" id="sidebarStatus">Sẵn sàng tạo nội dung nhanh trong Notion.</span>
+        <div class="toolbar toolbar--compact">
+          <span id="me" class="status muted"></span>
+        </div>
+      </div>
+      <div class="sidebar__footer">
+        <button id="themeToggle" class="ghost" type="button">Đổi giao diện</button>
+        <span>Tip: Đảm bảo token đã được cấp quyền.</span>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="app-main">
+      <header class="app-header">
+        <button id="menuToggle" class="menu-toggle icon-btn" type="button" aria-label="Mở menu">☰</button>
+        <div class="app-header__spacer"></div>
+        <button id="themeToggleHeader" class="ghost" type="button">Đổi giao diện</button>
+      </header>
+      <main class="app-content">
+        <div class="workspace">
+          <!-- <div class="pane">
+            <section class="card card--compact" id="listSection" style="display:none">
+              <div class="card__head">
+                <h2>Bộ sưu tập Notion</h2>
+                <p>Tải Databases và Pages có sẵn trong workspace.</p>
+              </div>
+              <div class="toolbar">
+                <div class="toolbar__group">
+                  <button id="btnLoadDBs" data-needs-server="true">Tải Databases</button>
+                  <button id="btnLoadPages" data-needs-server="true">Tải Pages</button>
+                </div>
+                <span id="loadStatus" class="status muted"></span>
+              </div>
+              <div class="list">
+                <div class="select-stack">
+                  <label for="dbList">Databases</label>
+                  <select id="dbList" size="10" data-needs-server="true"></select>
+                  <span id="dbInfo" class="muted"></span>
+                </div>
+                <div class="select-stack">
+                  <label for="pageList">Pages</label>
+                  <select id="pageList" size="10" data-needs-server="true"></select>
+                  <span id="pageInfo" class="muted"></span>
+                </div>
+              </div>
+            </section>
+          </div> -->
+
+          <div class="pane">
+            <section class="card card--favorites" id="favoriteSection">
+              <div class="card__head">
+                <h2>Mục đã đánh dấu</h2>
+                <p>Truy cập nhanh database hoặc page ưa thích.</p>
+              </div>
+              <div id="favoriteContent">
+                <p class="favorite-empty">Chưa có mục yêu thích.</p>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card__head card__head--with-actions">
+                <div class="card__head-info">
+                  <h2>Tạo page trong Database</h2>
+                  <p>Tạo mới page với thuộc tính được thiết lập tùy ý.</p>
+                </div>
+                <div class="card__actions">
+                  <button id="favoriteDbBtn" class="star-btn" type="button" aria-label="Đánh dấu database">☆</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <label for="dbSelect">Chọn Database</label>
+                  <div id="dbCombo" class="combo" data-select="dbSelect">
+                    <input id="dbComboInput" placeholder="Tìm database..." autocomplete="off" role="combobox" aria-controls="dbComboMenu" aria-expanded="false">
+                    <span class="combo__chevron">▾</span>
+                    <div id="dbComboMenu" class="combo__menu hidden" role="listbox"></div>
+                  </div>
+                  <select id="dbSelect" class="hidden-select" data-needs-server="true"></select>
+                </div>
+                <div class="col">
+                  <label for="title">Tiêu đề</label>
+                  <div class="title-with-icon">
+                    <div class="icon-btn-wrap">
+                      <button id="iconBtn" type="button" class="icon-btn" aria-label="Chọn icon" title="Chọn icon">📄</button>
+                      <div id="emojiPopover" class="emoji-popover hidden" role="dialog" aria-modal="true" aria-label="Chọn emoji">
+                        <div class="emoji-popover__panel">
+                          <emoji-picker id="emojiPickerElement" data-emoji-version="15" skin-tone-emoji="👍"></emoji-picker>
+                        </div>
+                      </div>
+                    </div>
+                    <input id="title" placeholder="Tiêu đề" />
+                  </div>
+                </div>
+              </div>
+              <div class="row row--single">
+                <div class="col">
+                  <label for="content">Nội dung (tùy chọn)</label>
+                  <textarea id="content" placeholder="Đoạn văn sẽ được chèn vào thân trang"></textarea>
+                </div>
+              </div>
+              <div id="propsContainer" class="property-panel">
+                <label>Thuộc tính</label>
+                <div id="propsForm"></div>
+                <span id="propStatus" class="status muted"></span>
+              </div>
+              <div class="toolbar">
+                <div class="toolbar__group">
+                  <button id="btnCreate" data-needs-server="true">Tạo Page</button>
+                  <span id="createStatus" class="status"></span>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card__head card__head--with-actions">
+                <div class="card__head-info">
+                  <h2>Thêm nhanh vào Page</h2>
+                  <p>Chèn thêm nội dung vào một trang Notion có sẵn.</p>
+                </div>
+                <div class="card__actions">
+                  <button id="favoritePageBtn" class="star-btn" type="button" aria-label="Đánh dấu page">☆</button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <label for="pageSelect">Chọn Page</label>
+                  <div id="pageCombo" class="combo" data-select="pageSelect">
+                    <input id="pageComboInput" placeholder="Tìm page..." autocomplete="off" role="combobox" aria-controls="pageComboMenu" aria-expanded="false">
+                    <span class="combo__chevron">▾</span>
+                    <div id="pageComboMenu" class="combo__menu hidden" role="listbox"></div>
+                  </div>
+                  <select id="pageSelect" class="hidden-select" data-needs-server="true"></select>
+                </div>
+                <div class="col">
+                  <label for="appendText">Nội dung</label>
+                  <textarea id="appendText" placeholder="Đoạn văn sẽ được thêm vào cuối trang"></textarea>
+                </div>
+              </div>
+              <div class="toolbar">
+                <div class="toolbar__group">
+                  <button id="btnAppend" data-needs-server="true">Thêm</button>
+                  <span id="appendStatus" class="status"></span>
+                </div>
+              </div>
+            </section>
+
+            <section class="card card--compact">
+              <div class="card__head">
+                <h2>Tìm kiếm</h2>
+                <p>Tra cứu toàn bộ nội dung Notion.</p>
+              </div>
+              <div class="toolbar toolbar--compact">
+                <div class="toolbar__group toolbar__group--grow">
+                  <input id="q" placeholder="Từ khóa">
+                  <button id="btnSearch" data-needs-server="true">Tìm</button>
+                </div>
+                <span id="searchStatus" class="status muted"></span>
+              </div>
+              <div class="row row--single">
+                <div class="col">
+                  <select id="searchList" size="8" data-needs-server="true"></select>
+                </div>
+              </div>
+            </section>
+
+            <section class="card card--compact">
+              <div class="card__head">
+                <h2>Cấu hình API</h2>
+                <p>Thiết lập endpoint backend và token Notion của bạn.</p>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <label for="apiBase">API base URL</label>
+                  <input id="apiBase" placeholder="http://localhost:3000" value="http://localhost:3000">
+                </div>
+                <div class="col">
+                  <label for="token">Integration Token</label>
+                  <input id="token" type="password" placeholder="secret_...">
+                </div>
+              </div>
+              <div class="toolbar">
+                <div class="toolbar__group">
+                  <button id="btnCheck" data-needs-server="true">Kiểm tra token</button>
+                  <button id="btnSave" class="ghost">Lưu cấu hình</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const api = () => ($('#apiBase').value || '').replace(/\/$/, '');
+    const token = () => $('#token').value.trim();
+
+    const bootBanner = document.getElementById('bootBanner');
+    const bootMessage = document.getElementById('bootMessage');
+    const bootRetry = document.getElementById('bootRetry');
+    const bootSpinner = bootBanner ? bootBanner.querySelector('.boot-spinner') : null;
+    const needsServerSelector = '[data-needs-server]';
+    const selectCache = {};
+    let serverReady = false;
+    let bootRunId = 0;
+    let hideBootBannerTimeout = null;
+    const bodyEl = document.body;
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const themeToggleButtons = [document.getElementById('themeToggle'), document.getElementById('themeToggleHeader')];
+    const sidebarStatusEl = document.getElementById('sidebarStatus');
+    const defaultSidebarStatus = sidebarStatusEl ? sidebarStatusEl.textContent : '';
+    const THEME_STORAGE_KEY = 'notionQuickAddTheme';
+    const FAVORITES_STORAGE_KEY = 'notionFavorites';
+    let favoritesState = { databases: [], pages: [] };
+
+    const favoriteTypeKey = (type) => (type === 'page' ? 'pages' : 'databases');
+    function loadFavoritesState() {
+      try {
+        const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+        if (!raw) {
+          favoritesState = { databases: [], pages: [] };
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        favoritesState = {
+          databases: Array.isArray(parsed?.databases) ? parsed.databases : [],
+          pages: Array.isArray(parsed?.pages) ? parsed.pages : []
+        };
+      } catch (_) {
+        favoritesState = { databases: [], pages: [] };
+      }
+    }
+    function saveFavoritesState() {
+      try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoritesState));
+      } catch (_) {}
+    }
+    function getFavorites(type) {
+      const key = favoriteTypeKey(type);
+      return favoritesState[key] || [];
+    }
+    function isFavorited(type, id) {
+      if (!type || !id) return false;
+      return getFavorites(type).some(item => item.id === id);
+    }
+    function upsertFavorite(type, item) {
+      if (!type || !item || !item.id) return;
+      const key = favoriteTypeKey(type);
+      const list = getFavorites(type);
+      const normalized = {
+        id: item.id,
+        title: (item.title || '').trim() || 'Không có tiêu đề',
+        url: item.url || ''
+      };
+      const existingIndex = list.findIndex(entry => entry.id === normalized.id);
+      if (existingIndex >= 0) {
+        const updated = [...list];
+        updated[existingIndex] = Object.assign({}, updated[existingIndex], normalized);
+        favoritesState[key] = updated;
+      } else {
+        favoritesState[key] = [...list, normalized];
+      }
+      saveFavoritesState();
+      renderFavoritesPanel();
+      syncFavoriteButtons();
+    }
+    function removeFavorite(type, id) {
+      if (!type || !id) return;
+      const key = favoriteTypeKey(type);
+      favoritesState[key] = getFavorites(type).filter(item => item.id !== id);
+      saveFavoritesState();
+      renderFavoritesPanel();
+      syncFavoriteButtons();
+    }
+    function toggleFavorite(type, item) {
+      if (!type || !item || !item.id) return;
+      if (isFavorited(type, item.id)) {
+        removeFavorite(type, item.id);
+      } else {
+        upsertFavorite(type, item);
+      }
+    }
+    function renderFavoritesPanel() {
+      const container = document.getElementById('favoriteContent');
+      if (!container) return;
+      const dbFavorites = getFavorites('database');
+      const pageFavorites = getFavorites('page');
+      container.innerHTML = '';
+      if (!dbFavorites.length && !pageFavorites.length) {
+        container.innerHTML = '<p class="favorite-empty">Chưa có mục yêu thích.</p>';
+        return;
+      }
+      const createGroup = (label, items, type) => {
+        if (!items.length) return null;
+        const group = document.createElement('div');
+        group.className = 'favorite-group';
+        const heading = document.createElement('h3');
+        heading.textContent = label;
+        const list = document.createElement('div');
+        list.className = 'favorite-list';
+        items.forEach(entry => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'favorite-item';
+          btn.textContent = entry.title || 'Không có tiêu đề';
+          btn.addEventListener('click', () => {
+            applyFavoriteSelection(type, entry);
+          });
+          list.appendChild(btn);
+        });
+        group.appendChild(heading);
+        group.appendChild(list);
+        return group;
+      };
+      const dbGroup = createGroup('Databases', dbFavorites, 'database');
+      const pageGroup = createGroup('Pages', pageFavorites, 'page');
+      if (dbGroup) container.appendChild(dbGroup);
+      if (pageGroup) container.appendChild(pageGroup);
+    }
+    function ensureOptionForFavorite(select, item, type) {
+      if (!select || !item) return;
+      let option = Array.from(select.options).find(opt => opt.value === item.id);
+      if (!option) {
+        option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.title || 'Không có tiêu đề';
+        option.title = `${option.textContent} — ${item.id}`;
+        option.dataset.url = item.url || '';
+        option.dataset.type = type || '';
+        select.appendChild(option);
+        cacheSelectOptions(select);
+      }
+    }
+    function applyFavoriteSelection(type, item) {
+      if (!type || !item) return;
+      if (type === 'database') {
+        const select = document.getElementById('dbSelect');
+        ensureOptionForFavorite(select, item, type);
+        if (select) {
+          select.value = item.id;
+          select.dispatchEvent(new Event('change'));
+          syncComboWithSelect('dbCombo', 'dbSelect');
+        }
+      } else if (type === 'page') {
+        const select = document.getElementById('pageSelect');
+        ensureOptionForFavorite(select, item, type);
+        if (select) {
+          select.value = item.id;
+          select.dispatchEvent(new Event('change'));
+          syncComboWithSelect('pageCombo', 'pageSelect');
+        }
+      }
+    }
+    function syncFavoriteButtons() {
+      const dbBtn = document.getElementById('favoriteDbBtn');
+      const dbSelect = document.getElementById('dbSelect');
+      if (dbBtn) {
+        const dbOption = dbSelect && dbSelect.selectedOptions[0];
+        const dbId = dbOption ? dbOption.value : '';
+        if (!dbId) {
+          dbBtn.disabled = true;
+          dbBtn.classList.remove('is-active');
+          dbBtn.textContent = '☆';
+          delete dbBtn.dataset.id;
+          delete dbBtn.dataset.title;
+          delete dbBtn.dataset.url;
+        } else {
+          dbBtn.disabled = false;
+          const active = isFavorited('database', dbId);
+          dbBtn.classList.toggle('is-active', active);
+          dbBtn.textContent = active ? '★' : '☆';
+          dbBtn.dataset.id = dbId;
+          dbBtn.dataset.title = dbOption.textContent || '';
+          dbBtn.dataset.url = dbOption.dataset ? dbOption.dataset.url || '' : '';
+        }
+      }
+      const pageBtn = document.getElementById('favoritePageBtn');
+      const pageSelect = document.getElementById('pageSelect');
+      if (pageBtn) {
+        const pageOption = pageSelect && pageSelect.selectedOptions[0];
+        const pageId = pageOption ? pageOption.value : '';
+        if (!pageId) {
+          pageBtn.disabled = true;
+          pageBtn.classList.remove('is-active');
+          pageBtn.textContent = '☆';
+          delete pageBtn.dataset.id;
+          delete pageBtn.dataset.title;
+          delete pageBtn.dataset.url;
+        } else {
+          pageBtn.disabled = false;
+          const active = isFavorited('page', pageId);
+          pageBtn.classList.toggle('is-active', active);
+          pageBtn.textContent = active ? '★' : '☆';
+          pageBtn.dataset.id = pageId;
+          pageBtn.dataset.title = pageOption.textContent || '';
+          pageBtn.dataset.url = pageOption.dataset ? pageOption.dataset.url || '' : '';
+        }
+      }
+    }
+
+    function updateSidebarStatus(message, tone = 'info') {
+      if (!sidebarStatusEl) return;
+      const normalizedMessage = message && String(message).trim() ? message : defaultSidebarStatus;
+      sidebarStatusEl.textContent = normalizedMessage;
+      if (tone === 'success') {
+        sidebarStatusEl.style.color = 'var(--success)';
+      } else if (tone === 'error') {
+        sidebarStatusEl.style.color = 'var(--danger)';
+      } else {
+        sidebarStatusEl.style.color = 'var(--sidebar-muted)';
+      }
+    }
+
+    function updateThemeToggleLabels(currentTheme) {
+      const nextLabel = currentTheme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối';
+      themeToggleButtons.forEach(btn => {
+        if (btn) btn.textContent = nextLabel;
+      });
+    }
+
+    function setTheme(theme, { save = true } = {}) {
+      const finalTheme = theme === 'dark' ? 'dark' : 'light';
+      if (finalTheme === 'dark') {
+        bodyEl.dataset.theme = 'dark';
+      } else {
+        delete bodyEl.dataset.theme;
+      }
+      updateThemeToggleLabels(finalTheme);
+      if (save) {
+        try { localStorage.setItem(THEME_STORAGE_KEY, finalTheme); } catch (_) {}
+      }
+    }
+
+    function detectPreferredTheme() {
+      try {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      } catch (_err) {
+        return 'light';
+      }
+    }
+
+    function initTheme() {
+      let stored = null;
+      try { stored = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
+      if (stored === 'dark' || stored === 'light') {
+        setTheme(stored, { save: false });
+      } else {
+        setTheme(detectPreferredTheme(), { save: false });
+      }
+    }
+
+    function watchSystemTheme() {
+      if (!window.matchMedia) return;
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (event) => {
+        let stored = null;
+        try { stored = localStorage.getItem(THEME_STORAGE_KEY); } catch (_) {}
+        if (stored === 'dark' || stored === 'light') return;
+        setTheme(event.matches ? 'dark' : 'light', { save: false });
+      };
+      if (media.addEventListener) {
+        media.addEventListener('change', handler);
+      } else if (media.addListener) {
+        media.addListener(handler);
+      }
+    }
+
+    function bindThemeToggle() {
+      themeToggleButtons.forEach(btn => {
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+          const current = bodyEl.dataset.theme === 'dark' ? 'dark' : 'light';
+          const next = current === 'dark' ? 'light' : 'dark';
+          setTheme(next);
+        });
+      });
+    }
+
+    function openSidebar() {
+      bodyEl.classList.add('sidebar-open');
+      if (sidebarClose) {
+        try { sidebarClose.focus({ preventScroll: true }); } catch (_) {}
+      }
+    }
+
+    function closeSidebar() {
+      bodyEl.classList.remove('sidebar-open');
+    }
+
+    function bindSidebarControls() {
+      if (menuToggle) menuToggle.addEventListener('click', openSidebar);
+      if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+      if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeSidebar();
+        }
+      });
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(min-width: 1080px)');
+        const mqHandler = (event) => {
+          if (event.matches) {
+            closeSidebar();
+          }
+        };
+        if (mq.addEventListener) {
+          mq.addEventListener('change', mqHandler);
+        } else if (mq.addListener) {
+          mq.addListener(mqHandler);
+        }
+      }
+      closeSidebar();
+    }
+
+    updateSidebarStatus(defaultSidebarStatus, 'info');
+    initTheme();
+    bindThemeToggle();
+    watchSystemTheme();
+    bindSidebarControls();
+    loadFavoritesState();
+    renderFavoritesPanel();
+    const MULTI_SELECT_COLOR_OPTIONS = [
+      { value: 'default', label: 'Mặc định' },
+      { value: 'gray', label: 'Xám' },
+      { value: 'brown', label: 'Nâu' },
+      { value: 'orange', label: 'Cam' },
+      { value: 'yellow', label: 'Vàng' },
+      { value: 'green', label: 'Xanh lá' },
+      { value: 'blue', label: 'Xanh dương' },
+      { value: 'purple', label: 'Tím' },
+      { value: 'pink', label: 'Hồng' },
+      { value: 'red', label: 'Đỏ' }
+    ];
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const serverControls = () => Array.from(document.querySelectorAll(needsServerSelector));
+
+    const normalizeSearchText = (text) => {
+      return String(text || '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}+/gu, '')
+        .toLowerCase()
+        .trim();
+    };
+
+    const orderBySearch = (items, query) => {
+      const normalized = String(query || '').trim().toLowerCase();
+      const normalizedSearch = normalizeSearchText(query);
+      if (!normalized && !normalizedSearch) {
+        return items.slice();
+      }
+      const scored = items.map(item => {
+        const textLower = item.textLower || '';
+        const textNormalized = item.textNormalized || textLower;
+        let score = 4;
+        if ((normalized && textLower === normalized) || (normalizedSearch && textNormalized === normalizedSearch)) {
+          score = 0;
+        } else {
+          const startsLower = normalized && textLower.startsWith(normalized);
+          const startsNormalized = normalizedSearch && textNormalized.startsWith(normalizedSearch);
+          if (startsLower || startsNormalized) {
+            score = 1;
+          } else {
+            const containsNormalized = normalizedSearch && textNormalized.includes(normalizedSearch);
+            const containsLower = normalized && textLower.includes(normalized);
+            if (containsNormalized || containsLower) {
+              score = 2;
+            }
+          }
+        }
+        return { item, score };
+      });
+      scored.sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        const textA = a.item.text || '';
+        const textB = b.item.text || '';
+        return textA.localeCompare(textB, 'vi', { sensitivity: 'base' });
+      });
+      return scored.map(entry => entry.item);
+    };
+
+    function toggleServerControls(disabled) {
+      serverControls().forEach((el) => {
+        if (typeof el.disabled !== 'undefined') {
+          el.disabled = disabled;
+        }
+        el.dataset.disabled = disabled ? 'true' : 'false';
+        el.classList.toggle('waiting-server', disabled);
+      });
+    }
+
+    function setBootState(state, message) {
+      if (!bootBanner) return;
+      if (hideBootBannerTimeout) {
+        clearTimeout(hideBootBannerTimeout);
+        hideBootBannerTimeout = null;
+      }
+      if (message && bootMessage) {
+        bootMessage.textContent = message;
+      }
+      if (bootSpinner) {
+        bootSpinner.style.display = state === 'loading' ? 'inline-block' : 'none';
+      }
+      if (bootRetry) {
+        bootRetry.style.display = state === 'error' ? 'inline-flex' : 'none';
+      }
+      updateSidebarStatus(message, state === 'ready' ? 'success' : state === 'error' ? 'error' : 'info');
+      if (state === 'ready') {
+        bootBanner.classList.remove('error');
+        bootBanner.classList.remove('hidden');
+        hideBootBannerTimeout = setTimeout(() => {
+          bootBanner.classList.add('hidden');
+        }, 1200);
+        return;
+      }
+      bootBanner.classList.toggle('error', state === 'error');
+      bootBanner.classList.remove('hidden');
+    }
+
+    async function pingServer(baseUrl) {
+      try {
+        const res = await fetch(`${baseUrl}/api/health?ts=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return false;
+        const data = await res.json().catch(() => ({}));
+        return data ? (typeof data.ok === 'boolean' ? data.ok : true) : true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function startBootSequence() {
+      const baseUrl = api() || '';
+      if (!baseUrl) {
+        setBootState('error', 'Chưa cấu hình API base URL');
+        toggleServerControls(true);
+        return;
+      }
+
+      const currentRun = ++bootRunId;
+      serverReady = false;
+      toggleServerControls(true);
+      setBootState('loading', 'Đang kết nối máy chủ...');
+
+      const maxAttempts = 20;
+      const interval = 1000;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (currentRun !== bootRunId) return;
+        setBootState('loading', `Đang kết nối máy chủ... (lần ${attempt})`);
+        const ok = await pingServer(baseUrl);
+        if (currentRun !== bootRunId) return;
+        if (ok) {
+          serverReady = true;
+          setBootState('loading', 'Máy chủ sẵn sàng. Đang đồng bộ dữ liệu...');
+          await autoInit();
+          if (currentRun !== bootRunId) return;
+          toggleServerControls(false);
+          const listSection = document.getElementById('listSection');
+          if (listSection) listSection.style.display = '';
+          setBootState('ready', 'Máy chủ sẵn sàng');
+          return;
+        }
+        await delay(interval);
+      }
+
+      if (currentRun !== bootRunId) return;
+      setBootState('error', `Không thể kết nối ${baseUrl}. Khởi động server rồi thử lại.`);
+      toggleServerControls(true);
+    }
+
+    if (bootRetry) {
+      bootRetry.addEventListener('click', () => {
+        startBootSequence();
+      });
+    }
+
+    function saveConfig() {
+      const prevBase = localStorage.getItem('apiBase') || '';
+      const newSig = $('#token').value.trim();
+      const oldSig = localStorage.getItem('cacheSig') || '';
+      const newBase = $('#apiBase').value;
+      localStorage.setItem('apiBase', newBase);
+      localStorage.setItem('notionToken', newSig);
+      if (newSig !== oldSig) {
+        localStorage.removeItem('dbCache');
+        localStorage.removeItem('pageCache');
+        localStorage.setItem('cacheSig', newSig);
+      }
+      toast('#me', 'Đã lưu cấu hình', true);
+      if (prevBase !== newBase || !serverReady) {
+        startBootSequence();
+      } else {
+        autoInit();
+      }
+    }
+    function loadConfig() {
+      const a = localStorage.getItem('apiBase');
+      const t = localStorage.getItem('notionToken');
+      if (a) $('#apiBase').value = a;
+      if (t) $('#token').value = t;
+    }
+    function toast(sel, msg, ok=false) {
+      const el = $(sel);
+      if (!el) return;
+      el.textContent = msg;
+      el.style.color = ok ? '#16a34a' : '';
+      if (!msg) return;
+      setTimeout(() => { el.textContent=''; el.style.color=''; }, 3000);
+    }
+
+    function createChipGroup(property, inputId, { multi = false, hint } = {}) {
+      const options = (property && property.options) || [];
+      const container = document.createElement('div');
+      container.className = 'chip-multi';
+      const list = document.createElement('div');
+      list.className = 'chip-multi__list';
+      container.appendChild(list);
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.id = inputId;
+
+      const normalizeColor = (color) => {
+        if (!color) return 'default';
+        return String(color).replace('_background', '');
+      };
+
+      const refreshHidden = () => {
+        if (multi) {
+          const values = Array.from(list.querySelectorAll('.chip.active')).map(chip => chip.dataset.value);
+          hidden.value = values.join('|');
+        } else {
+          const active = list.querySelector('.chip.active');
+          hidden.value = active ? active.dataset.value : '';
+        }
+      };
+
+      const addChip = (opt, { activate = false } = {}) => {
+        if (!opt || !opt.name) return;
+        const existing = Array.from(list.querySelectorAll('.chip')).find(chip => chip.dataset.value === opt.name);
+        if (existing) {
+          if (activate && !existing.classList.contains('active')) {
+            if (!multi) list.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+            existing.classList.add('active');
+            refreshHidden();
+          }
+          return;
+        }
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        chip.textContent = opt.name;
+        chip.dataset.value = opt.name;
+        chip.dataset.color = normalizeColor(opt.color);
+        chip.addEventListener('click', () => {
+          if (multi) {
+            chip.classList.toggle('active');
+          } else {
+            const alreadyActive = chip.classList.contains('active');
+            list.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+            if (!alreadyActive) chip.classList.add('active');
+          }
+          refreshHidden();
+        });
+        list.appendChild(chip);
+        if (activate) {
+          if (!multi) list.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          refreshHidden();
+        }
+      };
+
+      options.forEach(opt => addChip(opt));
+
+      if (hint) {
+        const hintEl = document.createElement('span');
+        hintEl.className = 'chip-multi__hint';
+        hintEl.textContent = hint;
+        container.appendChild(hintEl);
+      }
+
+      let statusEl = null;
+      if (multi && property && property.type === 'multi_select') {
+        const addWrap = document.createElement('div');
+        addWrap.className = 'chip-multi__add';
+
+        const addInput = document.createElement('input');
+        addInput.type = 'text';
+        addInput.placeholder = 'Nhập lựa chọn mới';
+        addInput.autocomplete = 'off';
+
+        const colorSelect = document.createElement('select');
+        MULTI_SELECT_COLOR_OPTIONS.forEach(({ value, label }) => {
+          const optionEl = document.createElement('option');
+          optionEl.value = value;
+          optionEl.textContent = label;
+          colorSelect.appendChild(optionEl);
+        });
+        colorSelect.value = 'default';
+
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.textContent = 'Thêm lựa chọn';
+        addBtn.classList.add('ghost');
+        addBtn.dataset.needsServer = 'true';
+
+        addWrap.appendChild(addInput);
+        addWrap.appendChild(colorSelect);
+        addWrap.appendChild(addBtn);
+        container.appendChild(addWrap);
+
+        statusEl = document.createElement('span');
+        statusEl.className = 'chip-multi__status';
+        container.appendChild(statusEl);
+
+        const showStatus = (message, type = 'info') => {
+          if (!statusEl) return;
+          statusEl.textContent = message || '';
+          if (!message) {
+            statusEl.style.color = 'var(--muted)';
+            return;
+          }
+          if (type === 'error') statusEl.style.color = 'var(--danger)';
+          else if (type === 'success') statusEl.style.color = 'var(--success)';
+          else statusEl.style.color = 'var(--muted)';
+        };
+
+        const onAdd = async () => {
+          const rawName = (addInput.value || '').trim();
+          if (!rawName) {
+            showStatus('Nhập tên lựa chọn', 'error');
+            addInput.focus();
+            return;
+          }
+          if (!currentDatabaseId) {
+            showStatus('Chưa chọn database', 'error');
+            return;
+          }
+          const propertyId = property.id || property.name;
+          if (!propertyId) {
+            showStatus('Thiếu ID thuộc tính', 'error');
+            return;
+          }
+          const duplicate = (property.options || []).some(opt => opt.name.toLowerCase() === rawName.toLowerCase());
+          if (duplicate) {
+            showStatus('Lựa chọn đã tồn tại', 'error');
+            addInput.focus();
+            return;
+          }
+          const colorValue = colorSelect.value || 'default';
+          addBtn.disabled = true;
+          addBtn.textContent = 'Đang thêm...';
+          showStatus('Đang gửi lên Notion...');
+          try {
+            const payload = { name: rawName, color: colorValue };
+            const path = `/api/databases/${encodeURIComponent(currentDatabaseId)}/properties/${encodeURIComponent(propertyId)}/options`;
+            const resp = await apiPost(path, payload);
+            const created = resp && resp.option ? resp.option : payload;
+            if (!property.options) property.options = [];
+            property.options.push(created);
+            addChip(created, { activate: true });
+            addInput.value = '';
+            showStatus('Đã thêm lựa chọn', 'success');
+            refreshHidden();
+          } catch (err) {
+            const msg = err && err.message ? err.message : String(err);
+            showStatus(msg, 'error');
+          } finally {
+            addBtn.disabled = false;
+            addBtn.textContent = 'Thêm lựa chọn';
+          }
+        };
+
+        addBtn.addEventListener('click', onAdd);
+        addInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            onAdd();
+          }
+        });
+      }
+
+      container.appendChild(hidden);
+      refreshHidden();
+      return container;
+    }
+
+    async function apiGet(path) {
+      const res = await fetch(api() + path, {
+        headers: { 'x-notion-token': token() }
+      });
+      if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+      return res.json();
+    }
+    async function apiPost(path, body) {
+      const res = await fetch(api() + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-notion-token': token() },
+        body: JSON.stringify(body || {})
+      });
+      if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+      return res.json();
+    }
+
+    function cacheSelectOptions(select) {
+      if (!select || !select.id) return;
+      selectCache[select.id] = Array.from(select.options).map(opt => ({
+        value: opt.value,
+        text: opt.textContent,
+        textLower: opt.textContent.toLowerCase(),
+        textNormalized: normalizeSearchText(opt.textContent),
+        title: opt.title || '',
+        dataset: { url: opt.dataset ? opt.dataset.url || '' : '' }
+      }));
+    }
+
+    function applyFilterToSelect(selectId, query) {
+      const select = document.getElementById(selectId);
+      const cache = selectCache[selectId];
+      if (!select || !cache) return;
+      const prevValue = select.value || '';
+      const ordered = orderBySearch(cache, query);
+      select.innerHTML = '';
+      ordered.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.value;
+        opt.textContent = item.text;
+        opt.title = item.title;
+        if (item.dataset && item.dataset.url) opt.dataset.url = item.dataset.url;
+        select.appendChild(opt);
+      });
+      const normalized = String(query || '').trim().toLowerCase();
+      const normalizedSearch = normalizeSearchText(query);
+      const bestMatch = (normalized || normalizedSearch)
+        ? ordered.find(item => item.textLower.includes(normalized) || item.textNormalized.includes(normalizedSearch))
+        : null;
+      const newValue = ordered.find(item => item.value === prevValue)?.value || (bestMatch ? bestMatch.value : '');
+      if (newValue) {
+        select.value = newValue;
+      } else {
+        select.selectedIndex = -1;
+      }
+      const finalValue = select.value || '';
+      if (finalValue !== prevValue) {
+        select.dispatchEvent(new Event('change'));
+      }
+      if (select.id === 'dbSelect' || select.id === 'pageSelect') {
+        syncFavoriteButtons();
+      }
+    }
+
+    function getSelectType(selectId) {
+      if (selectId === 'dbSelect') return 'database';
+      if (selectId === 'pageSelect') return 'page';
+      return null;
+    }
+
+    function getCacheForSelect(selectId) {
+      return selectCache[selectId] || [];
+    }
+
+    function populateComboMenu(selectId, menuEl, query) {
+      const cache = getCacheForSelect(selectId);
+      if (!cache || !menuEl) return;
+      const ordered = orderBySearch(cache, query);
+      menuEl.innerHTML = '';
+      const type = getSelectType(selectId);
+      const comboBaseId = selectId === 'dbSelect' ? 'dbCombo' : selectId === 'pageSelect' ? 'pageCombo' : '';
+      const comboInputRef = comboBaseId ? document.getElementById(comboBaseId + 'Input') : null;
+      ordered.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'combo__item';
+        btn.dataset.value = item.value;
+        const label = document.createElement('span');
+        label.className = 'combo__item-label';
+        label.textContent = item.text;
+        btn.appendChild(label);
+        if (type) {
+          const star = document.createElement('span');
+          star.className = 'combo__star';
+          const active = isFavorited(type, item.value);
+          star.textContent = active ? '★' : '☆';
+          if (active) star.classList.add('is-active');
+          star.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleFavorite(type, { id: item.value, title: item.text, url: item.dataset?.url || '' });
+            const currentQuery = comboInputRef ? comboInputRef.value : query;
+            populateComboMenu(selectId, menuEl, currentQuery);
+            syncFavoriteButtons();
+          });
+          btn.appendChild(star);
+        }
+        menuEl.appendChild(btn);
+      });
+    }
+
+    function syncComboWithSelect(comboBaseId, selectId) {
+      const comboInput = document.getElementById(comboBaseId + 'Input');
+      const comboMenu = document.getElementById(comboBaseId + 'Menu');
+      const select = document.getElementById(selectId);
+      if (!comboInput || !select) return;
+      const selectedOption = select.selectedOptions[0];
+      comboInput.value = selectedOption ? selectedOption.textContent : '';
+      if (comboMenu) populateComboMenu(selectId, comboMenu, comboInput.value);
+    }
+
+    function initCombo(comboBaseId, selectId) {
+      const combo = document.getElementById(comboBaseId);
+      const comboInput = document.getElementById(comboBaseId + 'Input');
+      const comboMenu = document.getElementById(comboBaseId + 'Menu');
+      const select = document.getElementById(selectId);
+      if (!combo || !comboInput || !comboMenu || !select) return;
+
+      let highlightedIndex = -1;
+
+      function openMenu() {
+        populateComboMenu(selectId, comboMenu, comboInput.value);
+        comboMenu.classList.remove('hidden');
+        comboInput.setAttribute('aria-expanded', 'true');
+      }
+
+      function closeMenu() {
+        comboMenu.classList.add('hidden');
+        comboInput.setAttribute('aria-expanded', 'false');
+        highlightedIndex = -1;
+        Array.from(comboMenu.querySelectorAll('.combo__item')).forEach(item => item.classList.remove('active'));
+      }
+
+      function highlightItem(index) {
+        const items = Array.from(comboMenu.querySelectorAll('.combo__item'));
+        if (!items.length) return;
+        highlightedIndex = (index + items.length) % items.length;
+        items.forEach((item, idx) => item.classList.toggle('active', idx === highlightedIndex));
+        const active = items[highlightedIndex];
+        if (active) active.scrollIntoView({ block: 'nearest' });
+      }
+
+      function selectValue(value) {
+        const option = Array.from(select.options).find(opt => opt.value === value);
+        if (!option) return;
+        select.value = value;
+        select.dispatchEvent(new Event('change'));
+        comboInput.value = option.textContent;
+        closeMenu();
+      }
+
+      combo.addEventListener('click', (event) => {
+        if (event.target === comboInput) return;
+        comboInput.focus();
+        if (comboMenu.classList.contains('hidden')) {
+          openMenu();
+        } else {
+          closeMenu();
+        }
+      });
+
+      comboInput.addEventListener('focus', () => {
+        openMenu();
+      });
+
+      comboInput.addEventListener('input', () => {
+        populateComboMenu(selectId, comboMenu, comboInput.value);
+        comboMenu.classList.remove('hidden');
+        comboInput.setAttribute('aria-expanded', 'true');
+        highlightedIndex = -1;
+        if (!comboInput.value.trim() && select.value) {
+          select.value = '';
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+
+      comboInput.addEventListener('keydown', (event) => {
+        const items = Array.from(comboMenu.querySelectorAll('.combo__item'));
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (comboMenu.classList.contains('hidden')) openMenu();
+          highlightItem(highlightedIndex + 1);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (comboMenu.classList.contains('hidden')) openMenu();
+          highlightItem(highlightedIndex - 1);
+        } else if (event.key === 'Enter') {
+          if (highlightedIndex >= 0 && items[highlightedIndex]) {
+            event.preventDefault();
+            selectValue(items[highlightedIndex].dataset.value);
+          }
+        } else if (event.key === 'Escape') {
+          closeMenu();
+        }
+      });
+
+      comboMenu.addEventListener('mousedown', (event) => {
+        const star = event.target.closest('.combo__star');
+        if (star) {
+          return;
+        }
+        const target = event.target.closest('.combo__item');
+        if (!target) return;
+        event.preventDefault();
+        selectValue(target.dataset.value);
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!combo.contains(event.target)) {
+          closeMenu();
+        }
+      });
+
+      select.addEventListener('change', () => {
+        const option = select.selectedOptions[0];
+        if (option) comboInput.value = option.textContent;
+      });
+    }
+
+    function fillSelect(select, items, options = {}) {
+      const { showId = false, autoSelectFirst = false, keepSelection = true } = options;
+      const prevValue = keepSelection ? select.value : '';
+      select.innerHTML = '';
+      for (const it of items) {
+        const opt = document.createElement('option');
+        opt.value = it.id;
+        const baseLabel = (it.title || it.name || '').trim();
+        const label = baseLabel || 'Không có tiêu đề';
+        opt.textContent = showId ? `${label} — ${it.id}` : label;
+        opt.title = `${label}${showId ? ' — ' + it.id : ''}`;
+        opt.dataset.url = it.url || '';
+        if (it.type) opt.dataset.type = it.type;
+        select.appendChild(opt);
+      }
+      cacheSelectOptions(select);
+      const comboBaseId = select.id === 'dbSelect' ? 'dbCombo' : select.id === 'pageSelect' ? 'pageCombo' : '';
+      if (comboBaseId) syncComboWithSelect(comboBaseId, select.id);
+      if (keepSelection && prevValue && items.some(it => it.id === prevValue)) {
+        select.value = prevValue;
+      } else if (autoSelectFirst && select.options.length) {
+        select.selectedIndex = 0;
+      } else {
+        select.selectedIndex = -1;
+      }
+      if (comboBaseId) syncComboWithSelect(comboBaseId, select.id);
+    }
+
+    async function autoInit(){
+      const sig = token();
+      if (!sig) return;
+      currentDatabaseId = null;
+      currentDbProps = null;
+      $('#propsForm').innerHTML = '';
+      $('#propStatus').textContent = 'Chưa chọn database';
+      const oldSig = localStorage.getItem('cacheSig');
+      if (oldSig !== sig) {
+        localStorage.removeItem('dbCache');
+        localStorage.removeItem('pageCache');
+        localStorage.setItem('cacheSig', sig);
+      }
+      try { onCheck(); } catch {}
+
+      const dbCacheText = localStorage.getItem('dbCache');
+      const pageCacheText = localStorage.getItem('pageCache');
+      let hadDB = false, hadPage = false;
+      if (dbCacheText) {
+        try { const items = JSON.parse(dbCacheText)||[]; fillSelect($('#dbSelect'), items, { keepSelection: false }); hadDB = items.length>0; } catch {}
+      }
+      if (pageCacheText) {
+        try { const items = JSON.parse(pageCacheText)||[]; fillSelect($('#pageSelect'), items, { keepSelection: false }); hadPage = items.length>0; } catch {}
+      }
+
+      if (!hadDB) {
+        try { const data = await apiGet('/api/databases'); const items = data.results || []; fillSelect($('#dbSelect'), items, { keepSelection: false }); localStorage.setItem('dbCache', JSON.stringify(items)); } catch {}
+      }
+      if (!hadPage) {
+        try { const data = await apiGet('/api/pages'); const items = data.results || []; fillSelect($('#pageSelect'), items, { keepSelection: false }); localStorage.setItem('pageCache', JSON.stringify(items)); } catch {}
+      }
+      localStorage.removeItem('lastDbId');
+      syncFavoriteButtons();
+    }
+
+    let currentDbProps = null;
+    let currentDatabaseId = null;
+    let loadDbPropsRequestId = 0;
+    function sanitizeId(n){ return 'prop_'+String(n||'').replace(/[^a-zA-Z0-9_]+/g,'_'); }
+    function extractIdCandidate(id){
+      const s = String(id||'').replace(/[^0-9a-fA-F]/g,'');
+      if (/^[0-9a-fA-F]{32}$/.test(s)) return s;
+      const m = s.match(/[0-9a-fA-F]{32}/);
+      return m ? m[0] : '';
+    }
+    async function loadDbPropsFromSelection(){
+      const requestId = ++loadDbPropsRequestId;
+      const manualInput = $('#dbIdManual');
+      const manualVal = manualInput ? manualInput.value.trim() : '';
+      const raw = ($('#dbSelect').value || '') || manualVal;
+      const id = extractIdCandidate(raw);
+      if (!id) {
+        currentDatabaseId = null;
+        currentDbProps = null;
+        $('#propsForm').innerHTML = '';
+        $('#propStatus').textContent = 'Chưa chọn database';
+        syncFavoriteButtons();
+        return;
+      }
+      $('#propStatus').textContent = 'Đang tải thuộc tính...';
+      try {
+        const data = await apiGet('/api/databases/' + encodeURIComponent(id) + '/properties');
+        if (requestId !== loadDbPropsRequestId) return;
+        currentDatabaseId = id;
+        currentDbProps = data;
+        renderPropsForm(data.properties || []);
+        $('#propStatus').textContent = `Đã tải ${ (data.properties || []).length } cột`;
+        syncFavoriteButtons();
+      } catch(e) {
+        if (requestId !== loadDbPropsRequestId) return;
+        $('#propStatus').textContent = e.message;
+        $('#propsForm').innerHTML='';
+        currentDbProps=null;
+        currentDatabaseId = null;
+        syncFavoriteButtons();
+      }
+    }
+    function renderPropsForm(props){
+      const form = $('#propsForm');
+      form.innerHTML='';
+      (props||[]).forEach(p=>{
+        if (!p || !p.name) return;
+        if (p.type === 'title') return;
+        const wrap = document.createElement('div');
+        wrap.className = 'col';
+        const label = document.createElement('label');
+        const inputId = sanitizeId(p.name);
+        label.setAttribute('for', inputId);
+        label.textContent = p.name + ' (' + p.type + ')';
+        wrap.appendChild(label);
+        if (p.type === 'select' || p.type === 'status') {
+          const chips = createChipGroup(p, inputId, { multi: false });
+          wrap.appendChild(chips);
+          form.appendChild(wrap);
+          return;
+        } else if (p.type === 'multi_select') {
+          const chips = createChipGroup(p, inputId, { multi: true, hint: 'Có thể chọn nhiều giá trị.' });
+          wrap.appendChild(chips);
+          form.appendChild(wrap);
+          return;
+        } else if (p.type === 'checkbox') {
+          el = document.createElement('input');
+          el.type = 'checkbox';
+          el.id = inputId;
+        } else if (p.type === 'number') {
+          el = document.createElement('input');
+          el.type = 'number';
+          el.step = 'any';
+          el.id = inputId;
+        } else if (p.type === 'date') {
+          const box = document.createElement('div');
+          box.style.display = 'grid';
+          box.style.gridTemplateColumns = '1fr 1fr';
+          box.style.gap = '8px';
+          const s = document.createElement('input'); s.type='datetime-local'; s.id=inputId+'_start';
+          const e = document.createElement('input'); e.type='datetime-local'; e.id=inputId+'_end';
+          box.appendChild(s); box.appendChild(e);
+          el = box;
+        } else if (p.type === 'files') {
+          el = document.createElement('input');
+          el.type = 'text';
+          el.placeholder = 'url1, url2';
+          el.id = inputId;
+        } else if (p.type === 'people' || p.type === 'relation') {
+          el = document.createElement('input');
+          el.type = 'text';
+          el.placeholder = 'id1, id2';
+          el.id = inputId;
+        } else if (p.type === 'url' || p.type === 'email' || p.type === 'phone_number' || p.type === 'rich_text') {
+          el = document.createElement('input');
+          el.type = 'text';
+          el.id = inputId;
+        } else {
+          el = document.createElement('input');
+          el.type = 'text';
+          el.id = inputId;
+        }
+        wrap.appendChild(el);
+        form.appendChild(wrap);
+      });
+    }
+    function collectPropsFromForm(props){
+      const out = {};
+      (props||[]).forEach(p=>{
+        if (!p || !p.name) return;
+        if (p.type === 'title') return;
+        const id = sanitizeId(p.name);
+        if (p.type === 'select' || p.type === 'status') {
+          const v = (document.getElementById(id)||{}).value || '';
+          if (v) out[p.name] = { [p.type === 'select' ? 'select' : 'status'] : { name: v } };
+        } else if (p.type === 'multi_select') {
+          const el = document.getElementById(id);
+          let vals = [];
+          if (el) {
+            if (el.tagName === 'SELECT') {
+              vals = Array.from(el.selectedOptions).map(o=>o.value).filter(Boolean);
+            } else {
+              vals = (el.value || '').split('|').map(v=>v.trim()).filter(Boolean);
+            }
+          }
+          if (vals.length) out[p.name] = { multi_select: vals.map(n=>({ name: n })) };
+        } else if (p.type === 'checkbox') {
+          const el = document.getElementById(id);
+          out[p.name] = { checkbox: !!(el && el.checked) };
+        } else if (p.type === 'number') {
+          const v = parseFloat((document.getElementById(id)||{}).value);
+          if (!Number.isNaN(v)) out[p.name] = { number: v };
+        } else if (p.type === 'date') {
+          const sEl = document.getElementById(id+'_start');
+          const eEl = document.getElementById(id+'_end');
+          const s = sEl && sEl.value ? new Date(sEl.value).toISOString() : null;
+          const e = eEl && eEl.value ? new Date(eEl.value).toISOString() : null;
+          if (s || e) out[p.name] = { date: Object.assign({}, s?{start:s}:{}, e?{end:e}:{}) };
+        } else if (p.type === 'files') {
+          const txt = (document.getElementById(id)||{}).value || '';
+          const urls = txt.split(',').map(s=>s.trim()).filter(Boolean);
+          if (urls.length) out[p.name] = { files: urls.map(u=>({ type:'external', name:u, external:{ url:u } })) };
+        } else if (p.type === 'people') {
+          const txt = (document.getElementById(id)||{}).value || '';
+          const ids = txt.split(',').map(s=>s.trim()).filter(Boolean);
+          if (ids.length) out[p.name] = { people: ids.map(i=>({ id:i })) };
+        } else if (p.type === 'relation') {
+          const txt = (document.getElementById(id)||{}).value || '';
+          const ids = txt.split(',').map(s=>s.trim()).filter(Boolean);
+          if (ids.length) out[p.name] = { relation: ids.map(i=>({ id:i })) };
+        } else if (p.type === 'url' || p.type === 'email' || p.type === 'phone_number') {
+          const v = (document.getElementById(id)||{}).value || '';
+          if (v) out[p.name] = { [p.type]: v };
+        } else if (p.type === 'rich_text') {
+          const v = (document.getElementById(id)||{}).value || '';
+          if (v) out[p.name] = { rich_text: [{ type:'text', text: { content: v } }] };
+        } else {
+          const v = (document.getElementById(id)||{}).value || '';
+          if (v) out[p.name] = { rich_text: [{ type:'text', text: { content: v } }] };
+        }
+      });
+      return out;
+    }
+    function extractAllProperties(item) {
+      const props = item.properties || {};
+      const result = {};
+      for (const key of Object.keys(props)) {
+        const prop = props[key];
+        switch (prop.type) {
+          case "title":
+            result[key] = prop.title?.map(t => t.plain_text).join("") || "";
+            break;
+          case "rich_text":
+            result[key] = prop.rich_text?.map(t => t.plain_text).join("") || "";
+            break;
+          case "number":
+            result[key] = prop.number ?? null;
+            break;
+          case "select":
+            result[key] = prop.select?.name || null;
+            break;
+          case "multi_select":
+            result[key] = prop.multi_select?.map(o => o.name) || [];
+            break;
+          case "date":
+            result[key] = prop.date || null;
+            break;
+          case "checkbox":
+            result[key] = prop.checkbox;
+            break;
+          case "url":
+            result[key] = prop.url || "";
+            break;
+          case "email":
+            result[key] = prop.email || "";
+            break;
+          case "phone_number":
+            result[key] = prop.phone_number || "";
+            break;
+          case "files":
+            result[key] = prop.files?.map(f => f.name) || [];
+            break;
+          case "people":
+            result[key] = prop.people?.map(p => p.name) || [];
+            break;
+          case "relation":
+            result[key] = prop.relation?.map(r => r.id) || [];
+            break;
+          case "status":
+            result[key] = prop.status?.name || null;
+            break;
+          default:
+            result[key] = null;
+            break;
+        }
+      }
+      return result;
+    }
+
+    async function onCheck() {
+      const meLabel = $('#me');
+      if (!meLabel) return;
+      try {
+        meLabel.textContent = 'Đang kiểm tra...';
+        const me = await apiGet('/api/me');
+        const email = me?.person?.email || '';
+        meLabel.textContent = (me?.name || 'Đã kết nối') + (email ? ' · ' + email : '');
+        meLabel.style.color = '#16a34a';
+      } catch (e) {
+        meLabel.textContent = e.message;
+        meLabel.style.color = '#dc2626';
+      }
+    }
+
+    async function onLoadDBs() {
+      try {
+        $('#loadStatus').textContent = 'Đang tải Databases...';
+        const data = await apiGet('/api/databases');
+        const items = data.results || [];
+        fillSelect($('#dbList'), items, { showId: false });
+        fillSelect($('#dbSelect'), items, { showId: false });
+        $('#loadStatus').textContent = `Đã tải ${items.length} databases`;
+      } catch (e) {
+        $('#loadStatus').textContent = e.message;
+        $('#loadStatus').classList.add('danger');
+      }
+    }
+    async function onLoadPages() {
+      try {
+        $('#loadStatus').textContent = 'Đang tải Pages...';
+        const data = await apiGet('/api/pages');
+        const items = data.results || [];
+        fillSelect($('#pageList'), items, { showId: false });
+        fillSelect($('#pageSelect'), items, { showId: false });
+        $('#loadStatus').textContent = `Đã tải ${items.length} pages`;
+      } catch (e) {
+        $('#loadStatus').textContent = e.message;
+        $('#loadStatus').classList.add('danger');
+      }
+    }
+
+    async function onCreate() {
+      const manualInput = $('#dbIdManual');
+      const manualVal = manualInput ? manualInput.value.trim() : '';
+      const database_id = $('#dbSelect').value || manualVal;
+      const title = $('#title').value.trim();
+      const content = $('#content').value;
+      let properties = currentDbProps ? collectPropsFromForm(currentDbProps.properties || []) : {};
+      if (!database_id) return toast('#createStatus', 'Chọn Database', false);
+      $('#btnCreate').disabled = true;
+      $('#createStatus').textContent = 'Đang tạo...';
+      try {
+        const payload = { database_id, title, content, properties };
+        if (selectedEmoji) payload.icon = { type: 'emoji', emoji: selectedEmoji };
+        const resp = await apiPost('/api/database/create-page', payload);
+        $('#createStatus').innerHTML = `Thành công · <a href="${resp.url}" target="_blank">Mở Notion</a>`;
+        $('#createStatus').style.color = '#16a34a';
+        $('#title').value = '';
+        $('#content').value = '';
+      } catch (e) {
+        $('#createStatus').textContent = e.message;
+        $('#createStatus').style.color = '#dc2626';
+      } finally {
+        $('#btnCreate').disabled = false;
+      }
+    }
+
+    async function onAppend() {
+      const page_id = $('#pageSelect').value;
+      const text = $('#appendText').value.trim();
+      if (!page_id) return toast('#appendStatus', 'Chọn Page');
+      if (!text) return toast('#appendStatus', 'Nhập nội dung');
+      $('#btnAppend').disabled = true;
+      $('#appendStatus').textContent = 'Đang thêm...';
+      try {
+        await apiPost('/api/pages/append', { page_id, text });
+        $('#appendStatus').textContent = 'Đã thêm';
+        $('#appendStatus').style.color = '#16a34a';
+        $('#appendText').value = '';
+      } catch (e) {
+        $('#appendStatus').textContent = e.message;
+        $('#appendStatus').style.color = '#dc2626';
+      } finally {
+        $('#btnAppend').disabled = false;
+      }
+    }
+
+    async function onSearch() {
+      const q = $('#q').value.trim();
+      $('#searchStatus').textContent = 'Đang tìm...';
+      try {
+        const data = await apiGet('/api/search?q=' + encodeURIComponent(q));
+        const items = (data.results || []).map(it => ({ id: it.id, title: (it?.properties && Object.values(it.properties).find(p=>p?.type==='title')?.title?.map(t=>t.plain_text).join('')) || 'Untitled', url: it.url }));
+        fillSelect($('#searchList'), items, { showId: true });
+        $('#searchStatus').textContent = `Kết quả: ${items.length}`;
+      } catch (e) {
+        $('#searchStatus').textContent = e.message;
+      }
+    }
+
+    $('#btnSave').addEventListener('click', saveConfig);
+    $('#btnCheck').addEventListener('click', onCheck);
+    const btnLoadDBs = document.getElementById('btnLoadDBs');
+    const btnLoadPages = document.getElementById('btnLoadPages');
+    if (btnLoadDBs) btnLoadDBs.addEventListener('click', onLoadDBs);
+    if (btnLoadPages) btnLoadPages.addEventListener('click', onLoadPages);
+    $('#btnCreate').addEventListener('click', onCreate);
+    $('#btnAppend').addEventListener('click', onAppend);
+    $('#btnSearch').addEventListener('click', onSearch);
+    $('#dbSelect').addEventListener('change', loadDbPropsFromSelection);
+    $('#dbSelect').addEventListener('change', () => {
+      if (!$('#dbSelect').value) {
+        currentDatabaseId = null;
+        currentDbProps = null;
+        $('#propsForm').innerHTML = '';
+        $('#propStatus').textContent = 'Chưa chọn database';
+      }
+      syncFavoriteButtons();
+    });
+    $('#pageSelect').addEventListener('change', () => {
+      syncFavoriteButtons();
+    });
+    const manualInput = $('#dbIdManual');
+    if (manualInput) manualInput.addEventListener('blur', loadDbPropsFromSelection);
+
+    initCombo('dbCombo', 'dbSelect');
+    initCombo('pageCombo', 'pageSelect');
+
+    const favoriteDbBtn = document.getElementById('favoriteDbBtn');
+    if (favoriteDbBtn) {
+      favoriteDbBtn.addEventListener('click', () => {
+        const select = document.getElementById('dbSelect');
+        const option = select && select.selectedOptions[0];
+        if (!option) return;
+        toggleFavorite('database', {
+          id: option.value,
+          title: option.textContent || '',
+          url: option.dataset ? option.dataset.url || '' : ''
+        });
+      });
+    }
+    const favoritePageBtn = document.getElementById('favoritePageBtn');
+    if (favoritePageBtn) {
+      favoritePageBtn.addEventListener('click', () => {
+        const select = document.getElementById('pageSelect');
+        const option = select && select.selectedOptions[0];
+        if (!option) return;
+        toggleFavorite('page', {
+          id: option.value,
+          title: option.textContent || '',
+          url: option.dataset ? option.dataset.url || '' : ''
+        });
+      });
+    }
+
+    let selectedEmoji = localStorage.getItem('selectedEmoji') || '';
+    const iconBtn = document.getElementById('iconBtn');
+    const emojiPopover = document.getElementById('emojiPopover');
+    const emojiPickerElement = document.getElementById('emojiPickerElement');
+    const emojiClose = document.getElementById('emojiClose');
+    const emojiClear = document.getElementById('emojiClear');
+
+    function refreshIconBtn(){ if (iconBtn) iconBtn.textContent = selectedEmoji || '📄'; }
+    let emojiOutsideHandler = null;
+    let emojiKeyHandler = null;
+    function handleOutsideClick(event){
+      if (!emojiPopover || emojiPopover.classList.contains('hidden')) return;
+      if (emojiPopover.contains(event.target) || iconBtn.contains(event.target)) return;
+      closeEmojiPicker();
+    }
+    function handleKeydown(event){ if (event.key === 'Escape') closeEmojiPicker(); }
+    function openEmojiPicker(){
+      if (!emojiPopover) return;
+      emojiPopover.classList.remove('hidden');
+      emojiOutsideHandler = emojiOutsideHandler || handleOutsideClick;
+      emojiKeyHandler = emojiKeyHandler || handleKeydown;
+      document.addEventListener('mousedown', emojiOutsideHandler);
+      document.addEventListener('keydown', emojiKeyHandler);
+      setTimeout(() => {
+        const firstEmojiButton = emojiPopover.querySelector('button');
+        if (firstEmojiButton) firstEmojiButton.focus({ preventScroll: true });
+      }, 0);
+    }
+    function closeEmojiPicker(){
+      if (!emojiPopover) return;
+      if (emojiPopover.classList.contains('hidden')) return;
+      emojiPopover.classList.add('hidden');
+      if (emojiOutsideHandler) document.removeEventListener('mousedown', emojiOutsideHandler);
+      if (emojiKeyHandler) document.removeEventListener('keydown', emojiKeyHandler);
+    }
+    if (iconBtn) iconBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!emojiPopover) return;
+      if (emojiPopover.classList.contains('hidden')) {
+        openEmojiPicker();
+      } else {
+        closeEmojiPicker();
+      }
+    });
+    if (emojiClose) emojiClose.addEventListener('click', closeEmojiPicker);
+    if (emojiClear) emojiClear.addEventListener('click', () => { selectedEmoji=''; localStorage.removeItem('selectedEmoji'); refreshIconBtn(); closeEmojiPicker(); });
+    if (emojiPickerElement) emojiPickerElement.addEventListener('emoji-click', (event) => {
+      const emoji = event.detail.unicode;
+      if (!emoji) return;
+      selectedEmoji = emoji;
+      localStorage.setItem('selectedEmoji', selectedEmoji);
+      refreshIconBtn();
+      closeEmojiPicker();
+    });
+    refreshIconBtn();
+
+    loadConfig();
+    toggleServerControls(true);
+    startBootSequence();
+  </script>
+</body>
+</html>
