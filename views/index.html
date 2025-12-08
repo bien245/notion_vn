@@ -343,6 +343,13 @@
       min-height: 120px;
       resize: vertical;
     }
+    .bn-container {
+      min-height: 160px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-alt);
+      padding: 12px;
+    }
     input:focus,
     select:focus,
     textarea:focus {
@@ -1134,6 +1141,10 @@
   </style>
   <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.min.js"></script>
   <link rel="icon" href="data:,">
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.31.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@2.10.2/dist/paragraph.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.8.0/dist/list.min.js"></script>
 </head>
 <body>
   <div id="bootBanner" class="boot-banner">
@@ -1257,7 +1268,8 @@
               <div class="row row--single">
                 <div class="col">
                   <label for="content">Nội dung (tùy chọn)</label>
-                  <textarea id="content" placeholder="Đoạn văn sẽ được chèn vào thân trang"></textarea>
+                  <div id="contentEditorRoot" class="bn-container" aria-label="Nội dung (Block editor)"></div>
+                  <textarea id="content" placeholder="Đoạn văn sẽ được chèn vào thân trang" style="display:none"></textarea>
                 </div>
               </div>
               <div id="propsContainer" class="property-panel">
@@ -1295,7 +1307,8 @@
                 </div>
                 <div class="col">
                   <label for="appendText">Nội dung</label>
-                  <textarea id="appendText" placeholder="Đoạn văn sẽ được thêm vào cuối trang"></textarea>
+                  <div id="appendEditorRoot" class="bn-container" aria-label="Nội dung (Block editor)"></div>
+                  <textarea id="appendText" placeholder="Đoạn văn sẽ được thêm vào cuối trang" style="display:none"></textarea>
                 </div>
               </div>
               <div class="toolbar">
@@ -1357,6 +1370,136 @@
     const $ = (s) => document.querySelector(s);
     const api = () => ($('#apiBase').value || '').replace(/\/$/, '');
     const token = () => $('#token').value.trim();
+
+    // Editor.js integration (vanilla, Notion-like)
+    window.__contentEditor = null;
+    window.__appendEditor = null;
+    function fallbackEditorToTextarea(kind) {
+      try {
+        if (kind === 'content') {
+          const ta = document.getElementById('content');
+          const holder = document.getElementById('contentEditorRoot');
+          if (ta) ta.style.display = '';
+          if (holder) holder.style.display = 'none';
+          window.__contentEditor = null;
+        } else if (kind === 'append') {
+          const ta = document.getElementById('appendText');
+          const holder = document.getElementById('appendEditorRoot');
+          if (ta) ta.style.display = '';
+          if (holder) holder.style.display = 'none';
+          window.__appendEditor = null;
+        }
+      } catch (_) {}
+    }
+    function htmlToPlain(html) {
+      const div = document.createElement('div');
+      div.innerHTML = String(html || '');
+      return (div.textContent || div.innerText || '').trim();
+    }
+    function blocksToPlainText(data) {
+      const blocks = (data && Array.isArray(data.blocks)) ? data.blocks : [];
+      const lines = [];
+      for (const b of blocks) {
+        if (!b || !b.type) continue;
+        if (b.type === 'paragraph') {
+          lines.push(htmlToPlain(b.data && b.data.text));
+        } else if (b.type === 'header') {
+          lines.push(htmlToPlain(b.data && b.data.text));
+        } else if (b.type === 'list') {
+          const items = (b.data && Array.isArray(b.data.items)) ? b.data.items : [];
+          for (const it of items) {
+            const t = typeof it === 'string' ? it : (it && it.content) ? it.content : it && it.text ? it.text : it;
+            lines.push('- ' + htmlToPlain(t));
+          }
+        } else if (b.data && b.data.text) {
+          lines.push(htmlToPlain(b.data.text));
+        }
+      }
+      return lines.join('\n').trim();
+    }
+    async function getContentEditorText() {
+      try {
+        if (window.__contentEditor && typeof window.__contentEditor.save === 'function') {
+          const data = await window.__contentEditor.save();
+          return blocksToPlainText(data);
+        }
+      } catch (_) {}
+      const ta = document.getElementById('content');
+      return ta ? String(ta.value || '') : '';
+    }
+    async function getAppendEditorText() {
+      try {
+        if (window.__appendEditor && typeof window.__appendEditor.save === 'function') {
+          const data = await window.__appendEditor.save();
+          return blocksToPlainText(data);
+        }
+      } catch (_) {}
+      const ta = document.getElementById('appendText');
+      return ta ? String(ta.value || '') : '';
+    }
+    function initBlockEditors() {
+      try {
+        const contentTa = document.getElementById('content');
+        const contentHolder = document.getElementById('contentEditorRoot');
+        const appendTa = document.getElementById('appendText');
+        const appendHolder = document.getElementById('appendEditorRoot');
+        if (!window.EditorJS) {
+          if (contentTa) contentTa.style.display = '';
+          if (contentHolder) contentHolder.style.display = 'none';
+          if (appendTa) appendTa.style.display = '';
+          if (appendHolder) appendHolder.style.display = 'none';
+          return;
+        }
+        if (document.getElementById('contentEditorRoot')) {
+          const tools = {};
+          if (window.Paragraph) tools.paragraph = { class: Paragraph, inlineToolbar: true };
+          if (window.Header) tools.header = { class: Header, inlineToolbar: true, config: { levels: [1,2,3], defaultLevel: 2 } };
+          if (window.List) tools.list = { class: List, inlineToolbar: true };
+          window.__contentEditor = new EditorJS({
+            holder: 'contentEditorRoot',
+            placeholder: 'Nhập nội dung...',
+            autofocus: false,
+            defaultBlock: 'paragraph',
+            tools,
+          });
+          if (window.__contentEditor && window.__contentEditor.isReady && window.__contentEditor.isReady.catch) {
+            window.__contentEditor.isReady.catch((e) => {
+              console.error('Content editor init failed:', e);
+              fallbackEditorToTextarea('content');
+            });
+          }
+        }
+        if (document.getElementById('appendEditorRoot')) {
+          const tools2 = {};
+          if (window.Paragraph) tools2.paragraph = { class: Paragraph, inlineToolbar: true };
+          if (window.Header) tools2.header = { class: Header, inlineToolbar: true, config: { levels: [1,2,3], defaultLevel: 2 } };
+          if (window.List) tools2.list = { class: List, inlineToolbar: true };
+          window.__appendEditor = new EditorJS({
+            holder: 'appendEditorRoot',
+            placeholder: 'Nhập nội dung sẽ thêm vào trang...',
+            autofocus: false,
+            defaultBlock: 'paragraph',
+            tools: tools2,
+          });
+          if (window.__appendEditor && window.__appendEditor.isReady && window.__appendEditor.isReady.catch) {
+            window.__appendEditor.isReady.catch((e) => {
+              console.error('Append editor init failed:', e);
+              fallbackEditorToTextarea('append');
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Init EditorJS failed:', e);
+        const contentTa = document.getElementById('content');
+        const contentHolder = document.getElementById('contentEditorRoot');
+        const appendTa = document.getElementById('appendText');
+        const appendHolder = document.getElementById('appendEditorRoot');
+        if (contentTa) contentTa.style.display = '';
+        if (contentHolder) contentHolder.style.display = 'none';
+        if (appendTa) appendTa.style.display = '';
+        if (appendHolder) appendHolder.style.display = 'none';
+      }
+    }
 
     const bootBanner = document.getElementById('bootBanner');
     const bootMessage = document.getElementById('bootMessage');
@@ -1684,6 +1827,7 @@
     bindSidebarControls();
     loadFavoritesState();
     renderFavoritesPanel();
+    initBlockEditors();
     const MULTI_SELECT_COLOR_OPTIONS = [
       { value: 'default', label: 'Mặc định' },
       { value: 'gray', label: 'Xám' },
@@ -2613,19 +2757,28 @@
       const manualVal = manualInput ? manualInput.value.trim() : '';
       const database_id = $('#dbSelect').value || manualVal;
       const title = $('#title').value.trim();
-      const content = $('#content').value;
+      const content = await getContentEditorText();
+      let content_blocks = [];
+      try {
+        if (window.__contentEditor && typeof window.__contentEditor.save === 'function') {
+          const data = await window.__contentEditor.save();
+          content_blocks = Array.isArray(data && data.blocks) ? data.blocks : [];
+        }
+      } catch (_) {}
       let properties = currentDbProps ? collectPropsFromForm(currentDbProps.properties || []) : {};
       if (!database_id) return toast('#createStatus', 'Chọn Database', false);
       $('#btnCreate').disabled = true;
       $('#createStatus').textContent = 'Đang tạo...';
       try {
         const payload = { database_id, title, content, properties };
+        if (content_blocks && content_blocks.length) payload.content_blocks = content_blocks;
         if (selectedEmoji) payload.icon = { type: 'emoji', emoji: selectedEmoji };
         const resp = await apiPost('/api/database/create-page', payload);
         $('#createStatus').innerHTML = `Thành công · <a href="${resp.url}" target="_blank">Mở Notion</a>`;
         $('#createStatus').style.color = '#16a34a';
         $('#title').value = '';
         $('#content').value = '';
+        try { if (window.__contentEditor && typeof window.__contentEditor.clear === 'function') await window.__contentEditor.clear(); } catch (_) {}
       } catch (e) {
         $('#createStatus').textContent = e.message;
         $('#createStatus').style.color = '#dc2626';
@@ -2636,16 +2789,26 @@
 
     async function onAppend() {
       const page_id = $('#pageSelect').value;
-      const text = $('#appendText').value.trim();
+      const text = (await getAppendEditorText()).trim();
+      let blocks = [];
+      try {
+        if (window.__appendEditor && typeof window.__appendEditor.save === 'function') {
+          const data = await window.__appendEditor.save();
+          blocks = Array.isArray(data && data.blocks) ? data.blocks : [];
+        }
+      } catch (_) {}
       if (!page_id) return toast('#appendStatus', 'Chọn Page');
-      if (!text) return toast('#appendStatus', 'Nhập nội dung');
+      if (!text && (!blocks || !blocks.length)) return toast('#appendStatus', 'Nhập nội dung');
       $('#btnAppend').disabled = true;
       $('#appendStatus').textContent = 'Đang thêm...';
       try {
-        await apiPost('/api/pages/append', { page_id, text });
+        const payload = { page_id, text };
+        if (blocks && blocks.length) payload.blocks = blocks;
+        await apiPost('/api/pages/append', payload);
         $('#appendStatus').textContent = 'Đã thêm';
         $('#appendStatus').style.color = '#16a34a';
         $('#appendText').value = '';
+        try { if (window.__appendEditor && typeof window.__appendEditor.clear === 'function') await window.__appendEditor.clear(); } catch (_) {}
       } catch (e) {
         $('#appendStatus').textContent = e.message;
         $('#appendStatus').style.color = '#dc2626';

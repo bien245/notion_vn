@@ -171,6 +171,56 @@ function toCompactNotionId(raw = "") {
   return normalized ? normalized.replace(/-/g, "") : "";
 }
 
+function htmlToPlainText(s) {
+  try {
+    return String(s || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
+  } catch (_) { return String(s || ""); }
+}
+
+function toRichText(text) {
+  const content = String(text || "");
+  return [{ type: 'text', text: { content } }];
+}
+
+function editorJsBlocksToNotion(blocks = []) {
+  const out = [];
+  try {
+    for (const b of (Array.isArray(blocks) ? blocks : [])) {
+      if (!b || !b.type) continue;
+      const data = b.data || {};
+      if (b.type === 'header') {
+        const level = Number(data.level || 1);
+        const t = htmlToPlainText(data.text);
+        const key = level === 1 ? 'heading_1' : level === 2 ? 'heading_2' : 'heading_3';
+        if (t) out.push({ [key]: { rich_text: toRichText(t) } });
+      } else if (b.type === 'list') {
+        const style = String(data.style || 'unordered').toLowerCase();
+        const items = Array.isArray(data.items) ? data.items : [];
+        const blockKey = style === 'ordered' ? 'numbered_list_item' : 'bulleted_list_item';
+        for (const it of items) {
+          let raw = it;
+          if (it && typeof it === 'object') {
+            raw = it.content || it.text || '';
+          }
+          const t = htmlToPlainText(raw);
+          if (t) out.push({ [blockKey]: { rich_text: toRichText(t) } });
+        }
+      } else {
+        const t = htmlToPlainText(data.text || data.content || '');
+        if (t) out.push({ paragraph: { rich_text: toRichText(t) } });
+      }
+    }
+  } catch (_) {}
+  return out;
+}
+
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.get("/api/me", async (req, res) => {
@@ -522,6 +572,7 @@ app.post("/api/database/create-page", async (req, res) => {
     const title = body.title;
     const properties = body.properties;
     const content = body.content;
+    const content_blocks = Array.isArray(body.content_blocks) ? body.content_blocks : [];
     const icon = body.icon;
     const dbId = extractIdFromAny(database_id);
     if (!dbId) return res.status(400).json({ error: "database_id không hợp lệ" });
@@ -564,7 +615,10 @@ app.post("/api/database/create-page", async (req, res) => {
       const payload = { parent: { database_id: dbId }, properties: Object.assign({}, baseProps, (properties && typeof properties === 'object') ? properties : {}) };
       if (iconObj) payload.icon = iconObj;
       const newPage = await notion.pages.create(payload);
-      if (content && typeof content === "string" && content.trim()) {
+      const childrenFromBlocks = content_blocks && content_blocks.length ? editorJsBlocksToNotion(content_blocks) : [];
+      if (childrenFromBlocks.length) {
+        await notion.blocks.children.append({ block_id: newPage.id, children: childrenFromBlocks });
+      } else if (content && typeof content === "string" && content.trim()) {
         await notion.blocks.children.append({ block_id: newPage.id, children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: content } }] } }] });
       }
       return res.json({ ok: true, page_id: newPage.id, url: newPage.url });
@@ -580,8 +634,13 @@ app.post("/api/database/create-page", async (req, res) => {
     if (!resp.ok) { const t = await resp.text(); return res.status(resp.status).json({ error: resp.statusText, detail: t }); }
     const json = await resp.json();
     const pageId = json && json.id;
-    if (content && typeof content === 'string' && content.trim() && pageId) {
-      await fetch('https://api.notion.com/v1/blocks/' + encodeURIComponent(pageId) + '/children', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Notion-Version': '2022-06-28', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: content } }] } }] }) });
+    if (pageId) {
+      const childrenFromBlocks = content_blocks && content_blocks.length ? editorJsBlocksToNotion(content_blocks) : [];
+      if (childrenFromBlocks.length) {
+        await fetch('https://api.notion.com/v1/blocks/' + encodeURIComponent(pageId) + '/children', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Notion-Version': '2022-06-28', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ children: childrenFromBlocks }) });
+      } else if (content && typeof content === 'string' && content.trim()) {
+        await fetch('https://api.notion.com/v1/blocks/' + encodeURIComponent(pageId) + '/children', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Notion-Version': '2022-06-28', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: content } }] } }] }) });
+      }
     }
     res.json({ ok: true, page_id: pageId, url: json && json.url });
   } catch (e) {
@@ -597,13 +656,22 @@ app.post("/api/pages/append", async (req, res) => {
     const body = req.body || {};
     const page_id = body.page_id;
     const text = body.text;
-    if (!page_id || !text) return res.status(400).json({ error: "Thiếu page_id hoặc text" });
+    const blocks = Array.isArray(body.blocks) ? body.blocks : [];
+    if (!page_id) return res.status(400).json({ error: "Thiếu page_id" });
+    if (!text && (!blocks || !blocks.length)) return res.status(400).json({ error: "Thiếu nội dung" });
+
+    const childrenFromBlocks = blocks && blocks.length ? editorJsBlocksToNotion(blocks) : [];
 
     if (notion) {
-      await notion.blocks.children.append({ block_id: page_id, children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: text } }] } }] });
+      if (childrenFromBlocks.length) {
+        await notion.blocks.children.append({ block_id: page_id, children: childrenFromBlocks });
+      } else {
+        await notion.blocks.children.append({ block_id: page_id, children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: text } }] } }] });
+      }
       return res.json({ ok: true });
     }
-    const resp = await fetch('https://api.notion.com/v1/blocks/' + encodeURIComponent(page_id) + '/children', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Notion-Version': '2022-06-28', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ children: [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: text } }] } }] }) });
+    const restChildren = childrenFromBlocks.length ? childrenFromBlocks : [{ type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: text } }] } }];
+    const resp = await fetch('https://api.notion.com/v1/blocks/' + encodeURIComponent(page_id) + '/children', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Notion-Version': '2022-06-28', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ children: restChildren }) });
     if (!resp.ok) { const t = await resp.text(); return res.status(resp.status).json({ error: resp.statusText, detail: t }); }
     res.json({ ok: true });
   } catch (e) {
