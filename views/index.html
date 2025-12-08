@@ -827,7 +827,7 @@
     .emoji-popover {
       position: absolute;
       top: 50%;
-      right: calc(100% + 12px);
+      left: calc(100% + 12px);
       transform: translateY(-50%);
       z-index: 50;
       display: flex;
@@ -837,14 +837,50 @@
       content: '';
       position: absolute;
       top: 50%;
-      right: -10px;
+      left: -10px;
       transform: translateY(-50%);
       width: 0;
       height: 0;
       border-top: 8px solid transparent;
       border-bottom: 8px solid transparent;
-      border-left: 10px solid var(--surface);
+      border-right: 10px solid var(--surface);
       filter: drop-shadow(0 6px 12px rgba(15, 15, 15, 0.12));
+    }
+    .emoji-popover[data-placement="right"] {
+      left: calc(100% + 12px);
+      right: auto;
+    }
+    .emoji-popover[data-placement="right"]::before {
+      left: -10px;
+      right: auto;
+      border-right: 10px solid var(--surface);
+      border-left: none;
+    }
+    .emoji-popover[data-placement="left"] {
+      right: calc(100% + 12px);
+      left: auto;
+    }
+    .emoji-popover[data-placement="left"]::before {
+      right: -10px;
+      left: auto;
+      border-left: 10px solid var(--surface);
+      border-right: none;
+    }
+    @media (max-width: 480px) {
+      .emoji-popover {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+      }
+      .emoji-popover::before {
+        display: none;
+      }
+      .emoji-popover__panel {
+        width: min(320px, 90vw);
+        max-height: 65vh;
+      }
     }
     .emoji-popover__panel {
       width: min(340px, 70vw);
@@ -875,6 +911,7 @@
     }
     .emoji-popover__panel emoji-picker {
       flex: 1;
+      width: 100%;
       border: none;
       max-height: 55vh;
       background: var(--surface);
@@ -938,6 +975,70 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+    }
+    .sidebar__token {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--sidebar-border);
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(6px);
+    }
+    body[data-theme="dark"] .sidebar__token {
+      background: rgba(24, 27, 33, 0.75);
+    }
+    .sidebar__token label {
+      margin: 0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .sidebar__token-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sidebar__token-row input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+    }
+    .sidebar__token-row button {
+      flex: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-width: 0;
+    }
+    .sidebar__token-row button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(47, 118, 255, 0.25);
+    }
+    .sidebar__token-row button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    @media (max-width: 768px) {
+      .sidebar__token-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .sidebar__token-row input,
+      .sidebar__token-row button {
+        width: 100%;
+      }
     }
     .sidebar__status {
       padding: 14px;
@@ -1052,6 +1153,15 @@
       </div>
       <div class="sidebar__section">
         <span class="sidebar__status" id="sidebarStatus">Sẵn sàng tạo nội dung nhanh trong Notion.</span>
+        <div class="sidebar__token">
+          <label for="notionTokenInput">Notion Token</label>
+          <div class="sidebar__token-row">
+            <input id="notionTokenInput" type="password" placeholder="Nhập Notion token" autocomplete="off">
+            <button id="sidebarSaveBtn" type="button" class="ghost">Lưu token</button>
+            <button id="sidebarCheckBtn" type="button">Kiểm tra</button>
+          </div>
+          <span id="sidebarCheckStatus" class="status muted"></span>
+        </div>
         <div class="toolbar toolbar--compact">
           <span id="me" class="status muted"></span>
         </div>
@@ -1730,17 +1840,12 @@
     }
 
     function saveConfig() {
-      const prevBase = localStorage.getItem('apiBase') || '';
-      const newSig = $('#token').value.trim();
-      const oldSig = localStorage.getItem('cacheSig') || '';
+      let prevBase = '';
+      try { prevBase = localStorage.getItem('apiBase') || ''; } catch (_) {}
       const newBase = $('#apiBase').value;
-      localStorage.setItem('apiBase', newBase);
-      localStorage.setItem('notionToken', newSig);
-      if (newSig !== oldSig) {
-        localStorage.removeItem('dbCache');
-        localStorage.removeItem('pageCache');
-        localStorage.setItem('cacheSig', newSig);
-      }
+      const currentToken = $('#token').value;
+      try { localStorage.setItem('apiBase', newBase); } catch (_) {}
+      setTokenValue(currentToken, { syncSidebar: true });
       toast('#me', 'Đã lưu cấu hình', true);
       if (prevBase !== newBase || !serverReady) {
         startBootSequence();
@@ -1749,10 +1854,21 @@
       }
     }
     function loadConfig() {
-      const a = localStorage.getItem('apiBase');
-      const t = localStorage.getItem('notionToken');
-      if (a) $('#apiBase').value = a;
-      if (t) $('#token').value = t;
+      let storedBase = '';
+      let storedToken = null;
+      try { storedBase = localStorage.getItem('apiBase') || ''; } catch (_) {}
+      try {
+        storedToken = localStorage.getItem('notionToken');
+        if (storedToken === null) {
+          storedToken = localStorage.getItem('NOTION_TOKEN');
+        }
+      } catch (_) {
+        storedToken = null;
+      }
+      if (storedBase) $('#apiBase').value = storedBase;
+      if (typeof storedToken === 'string') {
+        setTokenValue(storedToken, { syncSidebar: true, resetCache: false });
+      }
     }
     function toast(sel, msg, ok=false) {
       const el = $(sel);
@@ -2553,6 +2669,132 @@
 
     $('#btnSave').addEventListener('click', saveConfig);
     $('#btnCheck').addEventListener('click', onCheck);
+    const sidebarTokenInput = document.getElementById('notionTokenInput');
+    const sidebarSaveBtn = document.getElementById('sidebarSaveBtn');
+    const sidebarCheckBtn = document.getElementById('sidebarCheckBtn');
+    const sidebarCheckStatus = document.getElementById('sidebarCheckStatus');
+
+    function syncSidebarTokenFromStorage() {
+      if (!sidebarTokenInput) return;
+      let current = '';
+      try {
+        current = localStorage.getItem('NOTION_TOKEN');
+        if (current === null) current = localStorage.getItem('notionToken');
+      } catch (_) {
+        current = '';
+      }
+      sidebarTokenInput.value = current || '';
+    }
+
+    function setTokenValue(raw, { syncSidebar = false, resetCache = true } = {}) {
+      const value = String(raw || '').trim();
+      const mainTokenInput = $('#token');
+      if (mainTokenInput) mainTokenInput.value = value;
+      if (syncSidebar && sidebarTokenInput) {
+        sidebarTokenInput.value = value;
+      }
+      let oldSig = '';
+      if (resetCache) {
+        try { oldSig = localStorage.getItem('cacheSig') || ''; } catch (_) { oldSig = ''; }
+      }
+      try {
+        localStorage.setItem('notionToken', value);
+        localStorage.setItem('NOTION_TOKEN', value);
+      } catch (_) {}
+      if (!resetCache) {
+        try {
+          if (value) {
+            localStorage.setItem('cacheSig', value);
+          } else {
+            localStorage.removeItem('cacheSig');
+          }
+        } catch (_) {}
+        return value;
+      }
+      try {
+        if (value !== oldSig) {
+          localStorage.removeItem('dbCache');
+          localStorage.removeItem('pageCache');
+        }
+        if (value) {
+          localStorage.setItem('cacheSig', value);
+        } else {
+          localStorage.removeItem('cacheSig');
+          localStorage.removeItem('dbCache');
+          localStorage.removeItem('pageCache');
+        }
+      } catch (_) {}
+      return value;
+    }
+
+    function persistSidebarToken(options = {}) {
+      if (!sidebarTokenInput) return '';
+      return setTokenValue(sidebarTokenInput.value, options);
+    }
+
+    async function sidebarCheck() {
+      if (!sidebarCheckBtn || !sidebarCheckStatus || !sidebarTokenInput) return;
+      const currentToken = persistSidebarToken();
+      if (!currentToken) {
+        sidebarCheckStatus.textContent = 'Nhập token trước khi kiểm tra';
+        sidebarCheckStatus.classList.add('danger');
+        return;
+      }
+      sidebarCheckStatus.textContent = 'Đang kiểm tra...';
+      sidebarCheckStatus.classList.remove('danger');
+      sidebarCheckBtn.disabled = true;
+      try {
+        await onCheck();
+        sidebarCheckStatus.textContent = 'Token hợp lệ! Đang đồng bộ dữ liệu...';
+        sidebarCheckStatus.classList.remove('danger');
+        await autoInit();
+        sidebarCheckStatus.textContent = 'Token hợp lệ! Đã đồng bộ dữ liệu.';
+        sidebarCheckStatus.classList.remove('danger');
+      } catch (err) {
+        sidebarCheckStatus.textContent = err && err.message ? err.message : 'Không thể kiểm tra token';
+        sidebarCheckStatus.classList.add('danger');
+      } finally {
+        sidebarCheckBtn.disabled = false;
+      }
+    }
+
+    if (sidebarTokenInput) {
+      syncSidebarTokenFromStorage();
+      sidebarTokenInput.addEventListener('change', persistSidebarToken);
+      sidebarTokenInput.addEventListener('blur', persistSidebarToken);
+      sidebarTokenInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          sidebarCheck();
+        }
+      });
+    }
+    if (sidebarCheckBtn) {
+      sidebarCheckBtn.addEventListener('click', sidebarCheck);
+    }
+    if (sidebarSaveBtn) {
+      sidebarSaveBtn.addEventListener('click', async () => {
+        if (!sidebarCheckStatus || !sidebarTokenInput) return;
+        const currentToken = persistSidebarToken();
+        if (!currentToken) {
+          sidebarCheckStatus.textContent = 'Nhập token trước khi lưu';
+          sidebarCheckStatus.classList.add('danger');
+          return;
+        }
+        sidebarSaveBtn.disabled = true;
+        sidebarCheckStatus.textContent = 'Đã lưu token. Đang đồng bộ dữ liệu...';
+        sidebarCheckStatus.classList.remove('danger');
+        try {
+          await autoInit();
+          sidebarCheckStatus.textContent = 'Đã lưu token. Dữ liệu đã cập nhật.';
+        } catch (err) {
+          sidebarCheckStatus.textContent = err && err.message ? err.message : 'Không thể đồng bộ với token này';
+          sidebarCheckStatus.classList.add('danger');
+        } finally {
+          sidebarSaveBtn.disabled = false;
+        }
+      });
+    }
     const btnLoadDBs = document.getElementById('btnLoadDBs');
     const btnLoadPages = document.getElementById('btnLoadPages');
     if (btnLoadDBs) btnLoadDBs.addEventListener('click', onLoadDBs);
@@ -2622,9 +2864,56 @@
       closeEmojiPicker();
     }
     function handleKeydown(event){ if (event.key === 'Escape') closeEmojiPicker(); }
+    function updateEmojiPopoverPlacement() {
+      if (!emojiPopover || !iconBtn) return;
+      if (window.matchMedia('(max-width: 480px)').matches) {
+        emojiPopover.dataset.placement = 'center';
+        return;
+      }
+      const rect = emojiPopover.getBoundingClientRect();
+      const iconRect = iconBtn.getBoundingClientRect();
+      const spaceRight = window.innerWidth - iconRect.right;
+      const spaceLeft = iconRect.left;
+      const preferRight = spaceRight >= rect.width + 24 || spaceRight >= spaceLeft;
+      const placement = preferRight ? 'right' : 'left';
+      emojiPopover.dataset.placement = placement;
+    }
+    function resizeEmojiPickerGrid() {
+      if (!emojiPopover || !emojiPickerElement) return;
+      requestAnimationFrame(() => {
+        const panel = emojiPopover.querySelector('.emoji-popover__panel');
+        if (!panel) return;
+        const width = panel.getBoundingClientRect().width || 0;
+        if (!width) return;
+        const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+        let columns = isNarrow ? 7 : 9;
+        while (columns > 5 && width / columns < 34) {
+          columns -= 1;
+        }
+        const cell = Math.max(26, Math.floor(width / columns) - 4);
+        const emojiPadding = Math.max(2, Math.min(8, Math.floor(cell * 0.14)));
+        let emojiSize = Math.max(18, cell - emojiPadding * 2);
+        if (emojiSize + emojiPadding * 2 > cell) {
+          emojiSize = Math.max(18, cell - emojiPadding * 2);
+        }
+        const totalEmojiSize = emojiSize + emojiPadding * 2;
+        const categorySize = Math.max(16, Math.min(emojiSize - 4, 32));
+        const categoryPadding = Math.max(2, Math.min(emojiPadding, Math.floor((cell - categorySize) / 2)));
+        const totalCategorySize = categorySize + categoryPadding * 2;
+
+        emojiPickerElement.style.setProperty('--emoji-size', emojiSize + 'px');
+        emojiPickerElement.style.setProperty('--emoji-padding', emojiPadding + 'px');
+        emojiPickerElement.style.setProperty('--total-emoji-size', totalEmojiSize + 'px');
+        emojiPickerElement.style.setProperty('--category-emoji-size', categorySize + 'px');
+        emojiPickerElement.style.setProperty('--category-emoji-padding', categoryPadding + 'px');
+        emojiPickerElement.style.setProperty('--total-category-emoji-size', totalCategorySize + 'px');
+      });
+    }
     function openEmojiPicker(){
       if (!emojiPopover) return;
       emojiPopover.classList.remove('hidden');
+      updateEmojiPopoverPlacement();
+      resizeEmojiPickerGrid();
       emojiOutsideHandler = emojiOutsideHandler || handleOutsideClick;
       emojiKeyHandler = emojiKeyHandler || handleKeydown;
       document.addEventListener('mousedown', emojiOutsideHandler);
@@ -2641,15 +2930,32 @@
       if (emojiOutsideHandler) document.removeEventListener('mousedown', emojiOutsideHandler);
       if (emojiKeyHandler) document.removeEventListener('keydown', emojiKeyHandler);
     }
-    if (iconBtn) iconBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (!emojiPopover) return;
-      if (emojiPopover.classList.contains('hidden')) {
-        openEmojiPicker();
-      } else {
-        closeEmojiPicker();
+    if (iconBtn) {
+      iconBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!emojiPopover) return;
+        if (emojiPopover.classList.contains('hidden')) {
+          openEmojiPicker();
+        } else {
+          closeEmojiPicker();
+        }
+      });
+      window.addEventListener('resize', () => {
+        if (!emojiPopover.classList.contains('hidden')) {
+          updateEmojiPopoverPlacement();
+          resizeEmojiPickerGrid();
+        }
+      });
+      const mobileMedia = window.matchMedia('(max-width: 480px)');
+      if (mobileMedia?.addEventListener) {
+        mobileMedia.addEventListener('change', () => {
+          if (!emojiPopover.classList.contains('hidden')) {
+            updateEmojiPopoverPlacement();
+            resizeEmojiPickerGrid();
+          }
+        });
       }
-    });
+    }
     if (emojiClose) emojiClose.addEventListener('click', closeEmojiPicker);
     if (emojiClear) emojiClear.addEventListener('click', () => { selectedEmoji=''; localStorage.removeItem('selectedEmoji'); refreshIconBtn(); closeEmojiPicker(); });
     if (emojiPickerElement) emojiPickerElement.addEventListener('emoji-click', (event) => {
