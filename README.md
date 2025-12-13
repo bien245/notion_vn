@@ -16,14 +16,31 @@
 1) Tạo dự án notion:
    Truy cập đường link https://www.notion.so/profile/integrations nhất tạo tích hợp mới
 
-   ![](assets\20251208_085340_oke.gif)
+   ![](assets/20251208_085340_oke.gif)
 2) Chọn các databse và page có thế tích hợp vào (bắt buộc để dùng được )
 
-   ![](assets\20251208_090824_sssss.gif)
+   ![](assets/20251208_090824_sssss.gif)
 
    3.Lấy token tích hợp và đưa vào app
 
-   ![](assets\20251208_090638_7303894105774.gif)
+   ![](assets/20251208_090638_7303894105774.gif)
+
+## Tính năng
+- [ ] Handwriting trong ô nhập page
+- [x]  lấy dữ liệu về chỉnh sửa tiếp (3 chế độ) trong tạo page
+- [x]  Lấy dữ liệu page về và cập nhật
+- [x]  chỉnh cái hộp yêu thích chỉ hiện theo page hoặc database
+- [ ]  tạo trang cài đặt
+- [x]  sửa lỗi tìm kiếm
+- [x]  ẩn cái loaddatabase với page lưu vào cache
+- [x]  đặt icon cho page
+- [x]  đặt dấu sao cho page hoặc database
+- [x]  menu bên phải hoặc popup
+- [x]  dc thêm thuộc tính mới cho nhiều lựa chọn
+- [ ]  lựa chọn mẫu có sẵn
+- [ ]  Hiện icon page
+- [ ]  tối ưu lại giao diện và dung lượng file apk
+- [ ]  chỉnh lại cái ô gợi ý / gợi ý đúng lúc của editorjs
 
 
 ## Kiến trúc
