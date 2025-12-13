@@ -1,4 +1,4 @@
-﻿![](assets\20251208_084304_Group_4.png)
+﻿![](assets/20251208_084304_Group_4.png)
 
 # NotionVN  Notion Quick Add
 
